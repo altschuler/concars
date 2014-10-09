@@ -53,13 +53,22 @@ class Car extends Thread {
     Pos curpos;                      // Current position 
     Pos newpos;                      // New position to go to
 
-    public Car(int no, CarDisplayI cd, Gate g) {
+    Semaphore[][] spaces;				 // TODO description
+
+    public Car(int no, CarDisplayI cd, Gate g, Semaphore[][] spaces) {
 
         this.no = no;
         this.cd = cd;
         mygate = g;
         startpos = cd.getStartPos(no);
         barpos = cd.getBarrierPos(no);  // For later use
+
+        this.spaces = spaces;
+        try {
+			this.spaces[startpos.row][startpos.col].P();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
         col = chooseColor();
 
@@ -127,14 +136,16 @@ class Car extends Thread {
                 }
                 	
                 newpos = nextPos(curpos);
+                spaces[newpos.row][newpos.col].P();
+                //  Move to new position
                 
-                //  Move to new position 
                 cd.clear(curpos);
                 cd.mark(curpos,newpos,col,no);
                 sleep(speed());
                 cd.clear(curpos,newpos);
                 cd.mark(newpos,col,no);
 
+                spaces[curpos.row][curpos.col].V();
                 curpos = newpos;
             }
 
@@ -152,15 +163,21 @@ public class CarControl implements CarControlI{
     CarDisplayI cd;           // Reference to GUI
     Car[]  car;               // Cars
     Gate[] gate;              // Gates
+    Semaphore[][] spaces;     // Spaces
 
     public CarControl(CarDisplayI cd) {
         this.cd = cd;
         car  = new  Car[9];
         gate = new Gate[9];
-
+        spaces = new Semaphore[11][12]; //TODO Magic numbers
+        for (int i = 0; i < 11; i++) {
+        	for (int j = 0; j < 12; j++) {
+        		spaces[i][j] = new Semaphore(1);
+        	}
+        }
         for (int no = 0; no < 9; no++) {
             gate[no] = new Gate();
-            car[no] = new Car(no,cd,gate[no]);
+            car[no] = new Car(no, cd, gate[no], spaces);
             car[no].start();
         } 
     }
@@ -207,9 +224,3 @@ public class CarControl implements CarControlI{
     }
 
 }
-
-
-
-
-
-
