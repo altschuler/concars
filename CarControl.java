@@ -64,8 +64,9 @@ class Car extends Thread {
 	Pos newpos; // New position to go to
 
 	Semaphore[][] spaces; // TODO description
+	Alley alley;
 
-	public Car(int no, CarDisplayI cd, Gate g, Semaphore[][] spaces) {
+	public Car(int no, CarDisplayI cd, Gate g, Semaphore[][] spaces, Alley alley) {
 
 		this.no = no;
 		this.cd = cd;
@@ -74,6 +75,8 @@ class Car extends Thread {
 		barpos = cd.getBarrierPos(no); // For later use
 
 		this.spaces = spaces;
+		this.alley = alley;
+
 		try {
 			this.spaces[startpos.row][startpos.col].P();
 		} catch (InterruptedException e) {
@@ -144,6 +147,12 @@ class Car extends Thread {
 				}
 
 				newpos = nextPos(curpos);
+				if(alley.inAlley(newpos)) {
+					if(!alley.inAlley(curpos))
+						alley.enter(no);
+				} else if(alley.inAlley(curpos)) {
+					alley.leave(no);
+				}
 				spaces[newpos.row][newpos.col].P();
 				// Move to new position
 
@@ -172,6 +181,7 @@ public class CarControl implements CarControlI {
 	Car[] car; // Cars
 	Gate[] gate; // Gates
 	Semaphore[][] spaces; // Spaces
+	Alley alley; // Alley
 
 	public CarControl(CarDisplayI cd) {
 		this.cd = cd;
@@ -183,9 +193,10 @@ public class CarControl implements CarControlI {
 				spaces[i][j] = new Semaphore(1);
 			}
 		}
+		alley = new Alley();
 		for (int no = 0; no < 9; no++) {
 			gate[no] = new Gate();
-			car[no] = new Car(no, cd, gate[no], spaces);
+			car[no] = new Car(no, cd, gate[no], spaces, alley);
 			car[no].start();
 		}
 	}
@@ -233,33 +244,67 @@ public class CarControl implements CarControlI {
 	public void setVariation(int no, int var) {
 		car[no].setVariation(var);
 	}
+}
 
-    public enum Direction {
-        UP, DOWN, EMPTY;
-    }
+/*public enum Direction {
+	UP, DOWN, EMPTY;
+}*/
 
-    class Alley {
+class Alley {
+	// public Direction dir;
+	private int cars;
+	public Semaphore sem;
+	public Pos[] points;
 
-        public Direction dir;
-        public Semaphore sem;
+	public Alley() {
+		// /this.dir = Direction.EMPTY;
+		this.sem = new Semaphore(1);
+		points = new Pos[11];
+		points[0] = new Pos(1,0);
+		points[1] = new Pos(2,0);
+		points[2] = new Pos(3,0);
+		points[3] = new Pos(4,0);
+		points[4] = new Pos(5,0);
+		points[5] = new Pos(6,0);
+		points[6] = new Pos(7,0);
+		points[7] = new Pos(8,0);
+		points[8] = new Pos(9,0);
+		points[9] = new Pos(9,1);
+		points[10] = new Pos(9,2);
+	}
 
-        public Alley() {
-            this.dir = Direction.EMPTY;
-            this.sem = new Semaphore(4);
-        }
+	// private Direction no2dir(int no) {
+	// return no > 4 ? Direction.DOWN : Direction.UP;
+	// }
 
-        private Direction no2dir(int no) {
-            return no > 4 ? Direction.DOWN : Direction.UP;
-        }
+	private int no2int(int no) {
+		return no > 4 ? -1 : 1;
+	}
 
-        public void enter(int no) {
-            if (this.dir == Direction.EMPTY) {
-                this.sem.P();
-            }
-        }
+	public boolean inAlley(Pos p) {
+		for(Pos other : points)
+			if(p.equals(other))
+				return true;
+		return false;
+	}
 
-        public void leave(int no) {
+	public void enter(int no) {
+		/*
+		 * if (this.dir == Direction.EMPTY) { this.sem.P(); }
+		 */
+		if (Math.signum(cars) != no2int(no)) {
+			try {
+				sem.P();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		cars += no2int(no);
+	}
 
-        }
-    }
+	public void leave(int no) {
+		cars -= no2int(no);
+		if (cars == 0)
+			sem.V();
+	}
 }
