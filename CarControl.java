@@ -63,10 +63,11 @@ class Car extends Thread {
 	Pos curpos; // Current position
 	Pos newpos; // New position to go to
 
-	Semaphore[][] spaces; // TODO description
+	SemFields semFields;
+
 	Alley alley;
 
-	public Car(int no, CarDisplayI cd, Gate g, Semaphore[][] spaces, Alley alley) {
+	public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley) {
 
 		this.no = no;
 		this.cd = cd;
@@ -74,16 +75,13 @@ class Car extends Thread {
 		startpos = cd.getStartPos(no);
 		barpos = cd.getBarrierPos(no); // For later use
 
-		this.spaces = spaces;
+		this.semFields = semFields;
+
 		this.alley = alley;
 
-		try {
-			this.spaces[startpos.row][startpos.col].P();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+        this.semFields.P(startpos);
 
-		col = chooseColor();
+        col = chooseColor();
 
 		// do not change the special settings for car no. 0
 		if (no == 0) {
@@ -147,13 +145,17 @@ class Car extends Thread {
 				}
 
 				newpos = nextPos(curpos);
-				if(alley.inAlley(newpos)) {
-					if(!alley.inAlley(curpos))
-						alley.enter(no);
-				} else if(alley.inAlley(curpos)) {
-					alley.leave(no);
+
+                Boolean curIn = alley.inAlley(curpos);
+                Boolean newIn = alley.inAlley(newpos);
+
+				if(newIn && !curIn) {
+                    alley.enter(no);
+				} else if(!newIn && curIn) {
+                    alley.leave(no);
 				}
-				spaces[newpos.row][newpos.col].P();
+				semFields.P(newpos);
+
 				// Move to new position
 
 				cd.clear(curpos);
@@ -162,7 +164,8 @@ class Car extends Thread {
 				cd.clear(curpos, newpos);
 				cd.mark(newpos, col, no);
 
-				spaces[curpos.row][curpos.col].V();
+				semFields.V(curpos);
+
 				curpos = newpos;
 			}
 
@@ -180,23 +183,20 @@ public class CarControl implements CarControlI {
 	CarDisplayI cd; // Reference to GUI
 	Car[] car; // Cars
 	Gate[] gate; // Gates
-	Semaphore[][] spaces; // Spaces
+	SemFields semFields; // Spaces
 	Alley alley; // Alley
 
 	public CarControl(CarDisplayI cd) {
 		this.cd = cd;
 		car = new Car[9];
 		gate = new Gate[9];
-		spaces = new Semaphore[11][12]; // TODO Magic numbers
-		for (int i = 0; i < 11; i++) {
-			for (int j = 0; j < 12; j++) {
-				spaces[i][j] = new Semaphore(1);
-			}
-		}
+
+		semFields = new SemFields(11, 12);
+
 		alley = new Alley();
 		for (int no = 0; no < 9; no++) {
 			gate[no] = new Gate();
-			car[no] = new Car(no, cd, gate[no], spaces, alley);
+			car[no] = new Car(no, cd, gate[no], semFields, alley);
 			car[no].start();
 		}
 	}
@@ -246,19 +246,13 @@ public class CarControl implements CarControlI {
 	}
 }
 
-/*public enum Direction {
-	UP, DOWN, EMPTY;
-}*/
-
 class Alley {
-	// public Direction dir;
 	private int cars;
 	public Semaphore sem;
 	public Pos[] points;
 
 	public Alley() {
-		// /this.dir = Direction.EMPTY;
-		this.sem = new Semaphore(1);
+        this.sem = new Semaphore(1);
 		points = new Pos[11];
 		points[0] = new Pos(1,0);
 		points[1] = new Pos(2,0);
@@ -273,10 +267,6 @@ class Alley {
 		points[10] = new Pos(9,2);
 	}
 
-	// private Direction no2dir(int no) {
-	// return no > 4 ? Direction.DOWN : Direction.UP;
-	// }
-
 	private int no2int(int no) {
 		return no > 4 ? -1 : 1;
 	}
@@ -289,9 +279,6 @@ class Alley {
 	}
 
 	public void enter(int no) {
-		/*
-		 * if (this.dir == Direction.EMPTY) { this.sem.P(); }
-		 */
 		if (Math.signum(cars) != no2int(no)) {
 			try {
 				sem.P();
@@ -307,4 +294,30 @@ class Alley {
 		if (cars == 0)
 			sem.V();
 	}
+}
+
+class SemFields {
+    private Semaphore[][] sems;
+
+    public SemFields(int row, int col) {
+        this.sems = new Semaphore[row][col];
+
+        for (int i = 0; i < 11; i++) {
+            for (int j = 0; j < 12; j++) {
+                this.sems[i][j] = new Semaphore(1);
+            }
+        }
+    }
+
+    public void P(Pos pos) {
+        try {
+            this.sems[pos.row][pos.col].P();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void V(Pos pos) {
+        this.sems[pos.row][pos.col].V();
+    }
 }
