@@ -234,18 +234,32 @@ public class CarControl implements CarControlI {
 		car[no].setVariation(var);
 	}
 
-class Alley {
+    public enum Direction {
+        UP, DOWN, EMPTY;
+    }
 
-	
+    class Alley {
 
-	public void enter(int no) {
-		
-	}
+        public Direction dir;
+        public Semaphore sem;
 
-	public void leave(int no) {
-		
-	}
+        public Alley() {
+            this.dir = Direction.EMPTY;
+            this.sem = new Semaphore(4);
+        }
 
-}
+        private Direction no2dir(int no) {
+            return no > 4 ? Direction.DOWN : Direction.UP;
+        }
 
+        public void enter(int no) {
+            if (this.dir == Direction.EMPTY) {
+                this.sem.P();
+            }
+        }
+
+        public void leave(int no) {
+
+        }
+    }
 }
