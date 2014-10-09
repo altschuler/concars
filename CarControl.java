@@ -5,6 +5,8 @@
 //Hans Henrik Løvengreen    Oct 6, 2014
 
 import java.awt.Color;
+import java.util.HashSet;
+import java.util.Set;
 
 class Gate {
 
@@ -248,23 +250,24 @@ public class CarControl implements CarControlI {
 
 class Alley {
 	private int cars;
-	public Semaphore sem;
-	public Pos[] points;
+	private Semaphore sem;
+	private Set<Pos> points;
 
 	public Alley() {
-        this.sem = new Semaphore(1);
-		points = new Pos[11];
-		points[0] = new Pos(1,0);
-		points[1] = new Pos(2,0);
-		points[2] = new Pos(3,0);
-		points[3] = new Pos(4,0);
-		points[4] = new Pos(5,0);
-		points[5] = new Pos(6,0);
-		points[6] = new Pos(7,0);
-		points[7] = new Pos(8,0);
-		points[8] = new Pos(9,0);
-		points[9] = new Pos(9,1);
-		points[10] = new Pos(9,2);
+        sem = new Semaphore(1);
+
+		points = new HashSet<Pos>();
+		points.add(new Pos(1,0));
+		points.add(new Pos(2,0));
+		points.add(new Pos(3,0));
+		points.add(new Pos(4,0));
+		points.add(new Pos(5,0));
+		points.add(new Pos(6,0));
+		points.add(new Pos(7,0));
+		points.add(new Pos(8,0));
+		points.add(new Pos(9,0));
+		points.add(new Pos(9,1));
+		points.add(new Pos(9,2));
 	}
 
 	private int no2int(int no) {
@@ -272,10 +275,7 @@ class Alley {
 	}
 
 	public boolean inAlley(Pos p) {
-		for(Pos other : points)
-			if(p.equals(other))
-				return true;
-		return false;
+        return points.contains(p);
 	}
 
 	public void enter(int no) {
