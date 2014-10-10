@@ -250,11 +250,17 @@ public class CarControl implements CarControlI {
 
 class Alley {
 	private int cars;
-	private Semaphore sem;
 	private Set<Pos> points;
 
+	//private Semaphore sem;
+	private Semaphore access, carsRegion, top, bottom;
+
 	public Alley() {
-        sem = new Semaphore(1);
+        //sem = new Semaphore(1);
+		access = new Semaphore(1);
+		carsRegion = new Semaphore(1);
+		top = new Semaphore(1);
+		bottom = new Semaphore(1);
 
 		points = new HashSet<Pos>();
 		points.add(new Pos(1,0));
@@ -278,7 +284,30 @@ class Alley {
         return points.contains(p);
 	}
 
-	public void enter(int no) {
+	public void enter(int no) throws InterruptedException {
+		if(no > 4) {
+			top.P();
+		} else {
+			bottom.P();
+		}
+		carsRegion.P();
+		boolean b = Math.signum(cars) != no2int(no);
+		if (b) {
+			carsRegion.V();
+			access.P();
+			carsRegion.P();
+			cars += no2int(no);
+			carsRegion.V();
+		} else {
+			cars += no2int(no);
+			carsRegion.V();
+		}
+		if(no > 4) {
+			top.V();
+		} else {
+			bottom.V();
+		}
+		/*
 		if (Math.signum(cars) != no2int(no)) {
 			try {
 				sem.P();
@@ -287,12 +316,15 @@ class Alley {
 			}
 		}
 		cars += no2int(no);
+		*/
 	}
 
-	public void leave(int no) {
+	public void leave(int no) throws InterruptedException {
+		carsRegion.P();
 		cars -= no2int(no);
 		if (cars == 0)
-			sem.V();
+			access.V();
+		carsRegion.V();
 	}
 }
 
