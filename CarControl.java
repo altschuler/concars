@@ -291,17 +291,13 @@ class Alley {
 			bottom.P();
 		}
 		carsRegion.P();
-		boolean b = Math.signum(cars) != no2int(no);
-		if (b) {
+		if (Math.signum(cars) != no2int(no)) {
 			carsRegion.V();
 			access.P();
 			carsRegion.P();
-			cars += no2int(no);
-			carsRegion.V();
-		} else {
-			cars += no2int(no);
-			carsRegion.V();
 		}
+		cars += no2int(no);
+		carsRegion.V();
 		if(no > 4) {
 			top.V();
 		} else {
