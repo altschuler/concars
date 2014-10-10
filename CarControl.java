@@ -151,7 +151,7 @@ class Car extends Thread {
                 Boolean curIn = alley.inAlley(curpos);
                 Boolean newIn = alley.inAlley(newpos);
 
-				if(newIn && !curIn) {
+				if (newIn && !curIn) {
                     alley.enter(no);
 				} else if(!newIn && curIn) {
                     alley.leave(no);
