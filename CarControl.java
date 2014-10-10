@@ -252,74 +252,65 @@ class Alley {
 	private int cars;
 	private Set<Pos> points;
 
-	//private Semaphore sem;
 	private Semaphore access, carsRegion, top, bottom;
 
 	public Alley() {
-        //sem = new Semaphore(1);
 		access = new Semaphore(1);
 		carsRegion = new Semaphore(1);
 		top = new Semaphore(1);
 		bottom = new Semaphore(1);
 
-		points = new HashSet<Pos>();
-		points.add(new Pos(1,0));
-		points.add(new Pos(2,0));
-		points.add(new Pos(3,0));
-		points.add(new Pos(4,0));
-		points.add(new Pos(5,0));
-		points.add(new Pos(6,0));
-		points.add(new Pos(7,0));
-		points.add(new Pos(8,0));
-		points.add(new Pos(9,0));
-		points.add(new Pos(9,1));
-		points.add(new Pos(9,2));
+		points = new HashSet<Pos>() {{
+            add(new Pos(1,0));
+            add(new Pos(2,0));
+            add(new Pos(3,0));
+            add(new Pos(4,0));
+            add(new Pos(5,0));
+            add(new Pos(6,0));
+            add(new Pos(7,0));
+            add(new Pos(8,0));
+            add(new Pos(9,0));
+            add(new Pos(9,1));
+            add(new Pos(9,2));
+        }};
 	}
 
 	private int no2int(int no) {
 		return no > 4 ? -1 : 1;
 	}
 
+    private Semaphore no2sem(int no) {
+        return no > 4 ? top : bottom;
+    }
+
 	public boolean inAlley(Pos p) {
         return points.contains(p);
 	}
 
 	public void enter(int no) throws InterruptedException {
-		if(no > 4) {
-			top.P();
-		} else {
-			bottom.P();
-		}
+		no2sem(no).P();
+
 		carsRegion.P();
+
 		if (Math.signum(cars) != no2int(no)) {
 			carsRegion.V();
 			access.P();
 			carsRegion.P();
 		}
 		cars += no2int(no);
+
 		carsRegion.V();
-		if(no > 4) {
-			top.V();
-		} else {
-			bottom.V();
-		}
-		/*
-		if (Math.signum(cars) != no2int(no)) {
-			try {
-				sem.P();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		cars += no2int(no);
-		*/
+
+        no2sem(no).V();
 	}
 
 	public void leave(int no) throws InterruptedException {
 		carsRegion.P();
+
 		cars -= no2int(no);
 		if (cars == 0)
 			access.V();
+
 		carsRegion.V();
 	}
 }
