@@ -11,3 +11,5 @@ local.properties
 .idea
 mandatory.iml
 out
+pan.*
+config.cfg
