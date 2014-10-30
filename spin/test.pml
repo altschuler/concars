@@ -1,11 +1,9 @@
 int alleyAccess = 1;
+int numCars = 0;
+
 int carsRegion = 1;
 int top = 1;
 int bottom = 1;
-
-int numCars = 0;
-
-byte topbotCrit = 0;
 
 inline P(sem)
 {
@@ -21,26 +19,23 @@ inline V(sem)
 	}
 }
 
-active [3] proctype car()
+active [4] proctype car()
 {
-	int dir;
+    int dir;
 	if
-	:: _pid < 3 -> dir = -1;
-	:: _pid >= 3 -> dir = 1;
+	:: _pid < 4  -> dir = -1;
+	:: _pid >= 4 -> dir = 1;
 	fi
 
 loop:
 // ENTER
 	if
-	:: dir == 1 -> P(bottom); 	// up car
-	:: dir == -1 -> P(top); 		// down car
+	:: dir == 1 -> P(bottom) 	// up car
+	:: dir == -1 -> P(top) 		// down car
 	fi
 
-	//topbotCrit++;
-	//assert(topbotCrit <= 2);		// critical section
-	//topbotCrit--;
-
 	P(carsRegion);			// entering critical region for numCars
+
 	int signum;
 	if
 	:: numCars < 0 -> signum = -1;
@@ -63,17 +58,18 @@ loop:
 		P(carsRegion);
 	fi
 
-	numCars = numCars + dir;
+    numCars = numCars + dir;
 
 	V(carsRegion);
 
 	if
-	:: dir == 1 -> V(bottom); 	// up car
-	:: dir == -1 -> V(top); 		// down car
+	:: dir == 1 -> V(bottom) 	// up car
+	:: dir == -1 -> V(top) 		// down car
 	fi
 
+
 // EXIT
-	P(carsRegion);
+   P(carsRegion);
 
 	numCars = numCars - dir;
 	if
@@ -82,5 +78,6 @@ loop:
 
 	V(carsRegion);
 
+    V(alleyAccess);
 goto loop;
 }
