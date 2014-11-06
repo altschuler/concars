@@ -60,8 +60,9 @@ class Car extends Thread {
 	Pos barpos; // Barrierpositon (provided by GUI)
 	Color col; // Car color
 	Gate mygate; // Gate at startposition
+    Barrier barrier;
 
-	int speed; // Current car speed
+    int speed; // Current car speed
 	Pos curpos; // Current position
 	Pos newpos; // New position to go to
 
@@ -69,21 +70,22 @@ class Car extends Thread {
 
 	Alley alley;
 
-	public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley) {
+	public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley, Barrier barrier) {
 
 		this.no = no;
 		this.cd = cd;
-		mygate = g;
-		startpos = cd.getStartPos(no);
-		barpos = cd.getBarrierPos(no); // For later use
+		this.mygate = g;
+        this.startpos = cd.getStartPos(no);
+		this.barpos = cd.getBarrierPos(no); // For later use
 
 		this.semFields = semFields;
 
 		this.alley = alley;
+        this.barrier = barrier;
 
         this.semFields.P(startpos);
 
-        col = chooseColor();
+        this.col = chooseColor();
 
 		// do not change the special settings for car no. 0
 		if (no == 0) {
@@ -148,6 +150,7 @@ class Car extends Thread {
 
 				newpos = nextPos(curpos);
 
+                // Alley handling
                 Boolean curIn = alley.inAlley(curpos);
                 Boolean newIn = alley.inAlley(newpos);
 
@@ -156,9 +159,15 @@ class Car extends Thread {
 				} else if(!newIn && curIn) {
                     alley.leave(no);
 				}
-				semFields.P(newpos);
 
-				// Move to new position
+                // Barrier handling
+                if (barrier.atBarrier(curpos, no)) {
+                    System.out.println("At barrier");
+                    barrier.sync(no);
+                }
+
+                // Move to new position
+				semFields.P(newpos);
 
 				cd.clear(curpos);
 				cd.mark(curpos, newpos, col, no);
@@ -187,8 +196,9 @@ public class CarControl implements CarControlI {
 	Gate[] gate; // Gates
 	SemFields semFields; // Spaces
 	Alley alley; // Alley
+    Barrier barrier;
 
-	public CarControl(CarDisplayI cd) {
+    public CarControl(CarDisplayI cd) {
 		this.cd = cd;
 		car = new Car[9];
 		gate = new Gate[9];
@@ -196,9 +206,11 @@ public class CarControl implements CarControlI {
 		semFields = new SemFields(11, 12);
 
 		alley = new Alley();
+        barrier = new Barrier();
+
 		for (int no = 0; no < 9; no++) {
 			gate[no] = new Gate();
-			car[no] = new Car(no, cd, gate[no], semFields, alley);
+			car[no] = new Car(no, cd, gate[no], semFields, alley, barrier);
 			car[no].start();
 		}
 	}
@@ -212,11 +224,13 @@ public class CarControl implements CarControlI {
 	}
 
 	public void barrierOn() {
-		cd.println("Barrier On not implemented in this version");
+        barrier.on();
+        cd.println("Barrier turned on");
 	}
 
 	public void barrierOff() {
-		cd.println("Barrier Off not implemented in this version");
+        barrier.off();
+        cd.println("Barrier turned off");
 	}
 
 	public void barrierSet(int k) {
