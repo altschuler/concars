@@ -3,6 +3,7 @@ import java.util.ArrayList;
 public class Barrier {
     private Boolean active;
     private ArrayList<Semaphore> sems;
+    private int threshold;
 
     private Semaphore barrierAccess;
     private Semaphore carLock;
@@ -13,6 +14,8 @@ public class Barrier {
         this.barrierAccess = new Semaphore(0);
         this.carLock = new Semaphore(1);
         this.cars = 0;
+
+        this.threshold = 7;
     }
 
     public void sync(int no) throws InterruptedException {
@@ -22,12 +25,12 @@ public class Barrier {
             this.cars++;
             this.carLock.V();
 
-            if (this.cars < 9) {
-                System.out.println("Waiting for others " + no);
+            if (this.cars < this.threshold) {
+                // Wait for others
                 this.barrierAccess.P();
             } else {
-                System.out.println("Release " + this.cars);
-                for (int i = 0; i < 8; i++) {
+                // Give access to everyone
+                for (int i = 0; i < this.threshold - 1; i++) {
                     this.barrierAccess.V();
                 }
 
@@ -43,13 +46,27 @@ public class Barrier {
     }
 
     public void off() {
-        this.active = false;
+        try {
+            for (int i = 0; i < this.cars; i++) {
+                this.barrierAccess.V();
+            }
+
+            this.carLock.P();
+            this.cars = 0;
+            this.carLock.V();
+
+            this.active = false;
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public boolean atBarrier(Pos pos, int carNumber) {
-        if (carNumber < 5)
+        if (carNumber < 5) {
             return pos.row == 4 && pos.col > 2;
-        else
+        } else {
             return pos.row == 5 && pos.col > 2;
+        }
     }
 }
