@@ -21,20 +21,23 @@ inline V(sem)
 	}
 }
 
-active [3] proctype car()
+active [4] proctype car()
 {
 	int dir;
 	if
-	:: _pid < 3 -> dir = -1;
-	:: _pid >= 3 -> dir = 1;
-	fi
+	:: (_pid < 2) -> dir = -1;
+	:: (_pid >= 2) -> dir = 1;
+    :: else -> skip;
+	fi;
 
 loop:
 // ENTER
 	if
 	:: dir == 1 -> P(bottom); 	// up car
 	:: dir == -1 -> P(top); 		// down car
-	fi
+	fi;
+
+    printf("%u\n", _pid);
 
 	//topbotCrit++;
 	//assert(topbotCrit <= 2);		// critical section
@@ -46,22 +49,26 @@ loop:
 	:: numCars < 0 -> signum = -1;
 	:: numCars > 0 -> signum = 1;
 	:: numCars == 0 -> signum = 0;
-	fi
+    :: else -> skip;
+	fi;
 
     if
 	:: signum != dir ->
 		V(carsRegion);
-	fi
+    :: else -> skip;
+	fi;
 
     if
 	:: signum != dir ->
 		P(alleyAccess);
-	fi
+    :: else -> skip;
+	fi;
 
     if
 	:: signum != dir ->
 		P(carsRegion);
-	fi
+    :: else -> skip;
+	fi;
 
 	numCars = numCars + dir;
 
@@ -70,7 +77,7 @@ loop:
 	if
 	:: dir == 1 -> V(bottom); 	// up car
 	:: dir == -1 -> V(top); 		// down car
-	fi
+	fi;
 
 // EXIT
 	P(carsRegion);
@@ -78,7 +85,8 @@ loop:
 	numCars = numCars - dir;
 	if
 	:: numCars == 0 -> V(alleyAccess);
-	fi
+    :: else -> skip;
+	fi;
 
 	V(carsRegion);
 
