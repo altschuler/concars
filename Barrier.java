@@ -2,42 +2,86 @@ import java.util.ArrayList;
 
 public class Barrier {
     private Boolean active;
-    private ArrayList<Semaphore> sems;
+
     private int threshold;
 
-    private Semaphore barrierAccess;
-    private Semaphore carLock;
-    private int cars;
+    private Semaphore mutex;
+
+    private Semaphore arrivalLock;
+    private Semaphore leavingLock;
+
+    private int carsArriving;
+    private int carsLeaving;
+
+    private int[] rounds;
 
     public Barrier() {
         this.active = false;
-        this.barrierAccess = new Semaphore(0);
-        this.carLock = new Semaphore(1);
-        this.cars = 0;
 
-        this.threshold = 7;
+        this.mutex = new Semaphore(1);
+
+        this.arrivalLock = new Semaphore(0);
+        this.leavingLock = new Semaphore(0);
+
+        this.carsArriving = 0;
+        this.carsLeaving = 0;
+
+        this.threshold = 9;
+
+        this.rounds = new int[9];
     }
 
     public void sync(int no) throws InterruptedException {
+
+        this.mutex.P();
+
         if (this.active) {
 
-            this.carLock.P();
-            this.cars++;
-            this.carLock.V();
+            // ARRIVING
 
-            if (this.cars < this.threshold) {
+            this.carsArriving++;
+
+            if (this.carsArriving < this.threshold) {
                 // Wait for others
-                this.barrierAccess.P();
+                this.mutex.V();
+
+                this.arrivalLock.P();
             } else {
                 // Give access to everyone
                 for (int i = 0; i < this.threshold - 1; i++) {
-                    this.barrierAccess.V();
+                    this.arrivalLock.V();
                 }
 
-                this.carLock.P();
-                this.cars = 0;
-                this.carLock.V();
+                this.carsArriving = 0;
+                this.mutex.V();
             }
+
+
+            // LEAVING
+            this.mutex.P();
+            this.carsLeaving++;
+
+            if (this.carsLeaving < this.threshold) {
+                // Wait for others
+                this.mutex.V();
+
+                this.leavingLock.P();
+            } else {
+                // Give access to everyone
+                for (int i = 0; i < this.threshold - 1; i++) {
+                    this.leavingLock.V();
+                }
+
+                this.carsLeaving = 0;
+                this.mutex.V();
+            }
+
+            this.rounds[no]++;
+
+            System.out.print(this.rounds);
+        } else {
+
+            this.mutex.V();
         }
     }
 
@@ -47,15 +91,24 @@ public class Barrier {
 
     public void off() {
         try {
-            for (int i = 0; i < this.cars; i++) {
-                this.barrierAccess.V();
+
+            this.mutex.P();
+
+            for (int i = 0; i < this.carsArriving; i++) {
+                this.arrivalLock.V();
             }
 
-            this.carLock.P();
-            this.cars = 0;
-            this.carLock.V();
+            for (int i = 0; i < this.carsLeaving + this.carsArriving; i++) {
+                this.leavingLock.V();
+            }
+
+            this.carsArriving = 0;
+            this.carsLeaving = 0;
+
 
             this.active = false;
+
+            this.mutex.V();
 
         } catch (InterruptedException e) {
             e.printStackTrace();
