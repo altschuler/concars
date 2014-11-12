@@ -1,94 +1,189 @@
-int alleyAccess = 1;
-int carsRegion = 1;
-int top = 1;
-int bottom = 1;
+#define DOWN 0
+#define UP 1
 
-int numCars = 0;
+bool alleyAcc = 1;
+bool alleyCheck = 1;
+bool topQ = 1;
+bool botQ = 1;
 
-byte topbotCrit = 0;
+bool alleyDir = 0;
+bool alleyCars = 0;
+
+byte topbotQCrit = 0;
+byte alleyCheckCrit = 0
 
 inline P(sem)
 {
 	atomic {
-		(sem !=0) -> sem--;
+		sem != 0;
+		sem--
 	}
 }
 
 inline V(sem)
 {
 	atomic {
-		sem++;
+		sem++
 	}
 }
 
-active [4] proctype car()
+init
 {
-	int dir;
-	if
-	:: (_pid < 2) -> dir = -1;
-	:: (_pid >= 2) -> dir = 1;
-    :: else -> skip;
-	fi;
-
-loop:
-// ENTER
-	if
-	:: dir == 1 -> P(bottom); 	// up car
-	:: dir == -1 -> P(top); 		// down car
-	fi;
-
-    printf("%u\n", _pid);
-
-	//topbotCrit++;
-	//assert(topbotCrit <= 2);		// critical section
-	//topbotCrit--;
-
-	P(carsRegion);			// entering critical region for numCars
-	int signum;
-	if
-	:: numCars < 0 -> signum = -1;
-	:: numCars > 0 -> signum = 1;
-	:: numCars == 0 -> signum = 0;
-    :: else -> skip;
-	fi;
-
-    if
-	:: signum != dir ->
-		V(carsRegion);
-    :: else -> skip;
-	fi;
-
-    if
-	:: signum != dir ->
-		P(alleyAccess);
-    :: else -> skip;
-	fi;
-
-    if
-	:: signum != dir ->
-		P(carsRegion);
-    :: else -> skip;
-	fi;
-
-	numCars = numCars + dir;
-
-	V(carsRegion);
-
-	if
-	:: dir == 1 -> V(bottom); 	// up car
-	:: dir == -1 -> V(top); 		// down car
-	fi;
-
-// EXIT
-	P(carsRegion);
-
-	numCars = numCars - dir;
-	if
-	:: numCars == 0 -> V(alleyAccess);
-    :: else -> skip;
-	fi;
-
-	V(carsRegion);
-
-goto loop;
+	atomic{
+	run tester();
+	run carUp();
+	run carUp();
+	run carDown();
+	run carDown();
+	}
 }
+
+proctype tester()
+{
+	assert(alleyCars <= 2);
+	assert(topbotQCrit <= 2);
+	assert(alleyCheckCrit <= 1)
+}
+
+proctype carUp()
+{
+do ::
+	//Entering Alley
+	P(botQ);
+
+	topbotQCrit++;	//Critical Region
+	topbotQCrit--;
+
+	P(alleyCheck);
+
+	alleyCheckCrit++;	//Critical Region
+	alleyCheckCrit--;
+
+	if
+	:: alleyDir != UP; V(alleyCheck); P(alleyAcc); P(alleyCheck)
+	:: alleyDir == UP; skip
+	fi;
+	alleyDir = UP;
+	alleyCars++;
+
+	V(alleyCheck);
+	V(botQ);
+
+	//Exiting Alley
+	P(alleyCheck);
+
+	alleyCheckCrit++;	//Critical Region
+	alleyCheckCrit--;
+
+	alleyCars--;
+	if
+	:: alleyCars == 0; V(alleyAcc)
+	:: alleyCars != 0; skip
+	fi;
+
+	V(alleyCheck)
+od
+}
+
+proctype carDown()
+{
+do ::
+	//Entering Alley
+	P(topQ);
+
+	topbotQCrit++;	//Critical Region
+	topbotQCrit--;
+
+	P(alleyCheck);
+
+	alleyCheckCrit++;	//Critical Region
+	alleyCheckCrit--;
+
+	if
+	:: alleyDir != DOWN; V(alleyCheck); P(alleyAcc); P(alleyCheck)
+	:: alleyDir == DOWN; skip
+	fi;
+	alleyDir = DOWN;
+	alleyCars++;
+
+	V(alleyCheck);
+	V(topQ);
+
+	//Exiting Alley
+	P(alleyCheck);
+
+	alleyCheckCrit++;	//Critical Region
+	alleyCheckCrit--;
+
+	alleyCars--;
+	if
+	:: alleyCars == 0; V(alleyAcc)
+	:: else; skip
+	fi;
+	V(alleyCheck)
+od
+}
+
+/* OLD - Variables have new names.
+init
+{
+	atomic{
+		run tester();
+		run car(DOWN);
+		run car(DOWN);
+		run car(UP);
+		run car(UP)
+	}
+}
+
+proctype car(bool dir)
+{
+do ::
+	//Enter Alley
+	if
+	:: dir == UP; atomic{bottom != 0; bottom--}
+	:: dir == DOWN; atomic{top != 0; top--}
+	fi;
+
+	topbotCrit++;
+	topbotCrit--;
+
+	P(carsRegion);
+	//Critical Region
+
+	carsRegionCrit++;
+	carsRegionCrit--;
+
+	if
+	:: alleyDir != dir; V(carsRegion); P(alleyAccess); P(carsRegion) //Temp leave critical region
+	:: alleyDir == dir; skip
+	fi;
+	alleyDir = dir;
+	numCars++;
+	//Exit Critical Region
+	V(carsRegion);
+
+	if
+	:: dir == UP; V(bottom)
+	:: dir == DOWN; V(top)
+	fi;
+
+	//Exit Alley
+	P(carsRegion);
+	//Enter Critical Region
+
+	carsRegionCrit++;
+	carsRegionCrit--;
+
+	numCars--;
+	if
+	:: numCars == 0; V(alleyAccess)
+	:: numCars != 0; skip
+	fi;
+
+	//Exit Critical Region
+	V(carsRegion);
+	//end1:
+od
+}
+*/
