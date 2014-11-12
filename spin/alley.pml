@@ -69,6 +69,9 @@ do ::
 	V(alleyCheck);
 	V(botQ);
 
+	//In Alley
+	assert(dir == alleyDir);
+
 	//Exiting Alley
 	P(alleyCheck);
 
@@ -109,6 +112,9 @@ do ::
 	V(alleyCheck);
 	V(topQ);
 
+	//In Alley
+	assert(dir == alleyDir);
+
 	//Exiting Alley
 	P(alleyCheck);
 
@@ -139,7 +145,7 @@ init
 proctype car(bool dir)
 {
 do ::
-	//Enter Alley
+	//Entering Alley
 	if
 	:: dir == UP; atomic{bottom != 0; bottom--}
 	:: dir == DOWN; atomic{top != 0; top--}
@@ -167,8 +173,9 @@ do ::
 	:: dir == UP; V(bottom)
 	:: dir == DOWN; V(top)
 	fi;
+	//During Alley
 
-	//Exit Alley
+	//Exiting Alley
 	P(carsRegion);
 	//Enter Critical Region
 
