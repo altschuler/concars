@@ -61,8 +61,11 @@ public class Barrier {
             this.mutex.P();
             this.carsLeaving++;
 
+            this.rounds[no]++;
+
             if (this.carsLeaving < this.threshold) {
                 // Wait for others
+
                 this.mutex.V();
 
                 this.leavingLock.P();
@@ -73,12 +76,15 @@ public class Barrier {
                 }
 
                 this.carsLeaving = 0;
+
+                for (int r : this.rounds) {
+                    System.out.println(r);
+                }
+                System.out.println();
+
                 this.mutex.V();
             }
 
-            this.rounds[no]++;
-
-            System.out.print(this.rounds);
         } else {
 
             this.mutex.V();
@@ -86,7 +92,24 @@ public class Barrier {
     }
 
     public void on() {
-        this.active = true;
+        try {
+            this.mutex.P();
+
+            this.active = true;
+
+            // we must reset number of cars in both .on and .off because if cars
+            // are leaving after .off was called they will alter the state
+            this.carsArriving = 0;
+            this.carsLeaving = 0;
+
+            for (int i = 0; i < this.rounds.length; i++) {
+                this.rounds[i] = 0;
+            }
+
+            this.mutex.V();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void off() {
@@ -102,9 +125,10 @@ public class Barrier {
                 this.leavingLock.V();
             }
 
+            // resetting number of cars here because no remaining car should
+            // give access to the others again after this
             this.carsArriving = 0;
             this.carsLeaving = 0;
-
 
             this.active = false;
 

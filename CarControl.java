@@ -162,7 +162,6 @@ class Car extends Thread {
 
                 // Barrier handling
                 if (barrier.atBarrier(curpos, no)) {
-                    System.out.println("At barrier");
                     barrier.sync(no);
                 }
 
