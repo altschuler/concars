@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.util.HashSet;
 import java.util.Set;
 
+
 class Gate {
 
 	Semaphore g = new Semaphore(0);
@@ -68,9 +69,9 @@ class Car extends Thread {
 
 	SemFields semFields;
 
-	Alley alley;
+	AlleyMonitor alley;
 
-	public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley, Barrier barrier) {
+	public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, AlleyMonitor alley, Barrier barrier) {
 
 		this.no = no;
 		this.cd = cd;
@@ -194,7 +195,7 @@ public class CarControl implements CarControlI {
 	Car[] car; // Cars
 	Gate[] gate; // Gates
 	SemFields semFields; // Spaces
-	Alley alley; // Alley
+	AlleyMonitor alley; // Alley
     Barrier barrier;
 
     public CarControl(CarDisplayI cd) {
@@ -204,7 +205,7 @@ public class CarControl implements CarControlI {
 
 		semFields = new SemFields(11, 12);
 
-		alley = new Alley();
+		alley = new AlleyMonitor();
         barrier = new Barrier();
 
 		for (int no = 0; no < 9; no++) {
@@ -261,18 +262,13 @@ public class CarControl implements CarControlI {
 	}
 }
 
-class Alley {
-	private int cars;
-	private Set<Pos> points;
+abstract class Alley {
+	protected static final int UP = 1, DOWN = -1;
+	protected int cars = 0, alleyDir = 0;
+	protected Set<Pos> points;
 
-	private Semaphore access, carsRegion, top, bottom;
-
+	@SuppressWarnings("serial")
 	public Alley() {
-		access = new Semaphore(1);
-		carsRegion = new Semaphore(1);
-		top = new Semaphore(1);
-		bottom = new Semaphore(1);
-
 		points = new HashSet<Pos>() {{
             add(new Pos(1,0));
             add(new Pos(2,0));
@@ -288,39 +284,69 @@ class Alley {
         }};
 	}
 
-	private int no2int(int no) {
-		return no > 4 ? -1 : 1;
+	protected int noToDir(int no) {
+		return no > 4 ? DOWN : UP;
 	}
-
-    private Semaphore no2sem(int no) {
-        return no > 4 ? top : bottom;
-    }
 
 	public boolean inAlley(Pos p) {
         return points.contains(p);
 	}
+}
+
+class AlleyMonitor extends Alley{
+	public AlleyMonitor() {
+		super();
+	}
+
+	synchronized public void enter(int no) throws InterruptedException {
+		int dir = noToDir(no);
+		while(dir == -alleyDir) { wait(); }
+		cars++;
+		alleyDir = dir;
+	}
+
+	synchronized public void leave(int no) throws InterruptedException {
+		cars--;
+		if(cars == 0) { notifyAll(); alleyDir = 0; }
+	}
+}
+
+class AlleySemaphor extends Alley{
+	private Semaphore access, carsRegion, top, bottom;
+
+	public AlleySemaphor() {
+		super();
+		access = new Semaphore(1);
+		carsRegion = new Semaphore(1);
+		top = new Semaphore(1);
+		bottom = new Semaphore(1);
+	}
+
+    private Semaphore noToSem(int no) {
+        return no > 4 ? top : bottom;
+    }
 
 	public void enter(int no) throws InterruptedException {
-		no2sem(no).P();
+		noToSem(no).P();
 
 		carsRegion.P();
 
-		if (Math.signum(cars) != no2int(no)) {
+		if (Math.signum(cars) != noToDir(no)) {
 			carsRegion.V();
 			access.P();
 			carsRegion.P();
 		}
-		cars += no2int(no);
+		cars += noToDir(no);
 
 		carsRegion.V();
 
-        no2sem(no).V();
+        noToSem(no).V();
 	}
 
 	public void leave(int no) throws InterruptedException {
 		carsRegion.P();
 
-		cars -= no2int(no);
+		cars -= noToDir(no);
 		if (cars == 0)
 			access.V();
 
