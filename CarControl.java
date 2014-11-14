@@ -266,6 +266,7 @@ abstract class Alley {
 	protected static final int UP = 1, DOWN = -1;
 	protected int cars = 0, alleyDir = 0;
 	protected Set<Pos> points;
+	//protected Set<Pos> subPoints; //WIP quick-enter 1 and 2 solution.
 
 	@SuppressWarnings("serial")
 	public Alley() {
@@ -282,6 +283,18 @@ abstract class Alley {
             add(new Pos(9,1));
             add(new Pos(9,2));
         }};
+        /*
+        subPoints = new HashSet<Pos>() {{
+            add(new Pos(1,0));
+            add(new Pos(2,0));
+            add(new Pos(3,0));
+            add(new Pos(4,0));
+            add(new Pos(5,0));
+            add(new Pos(6,0));
+            add(new Pos(7,0));
+            add(new Pos(8,0));
+        }};
+        */
 	}
 
 	protected int noToDir(int no) {
@@ -291,6 +304,12 @@ abstract class Alley {
 	public boolean inAlley(Pos p) {
         return points.contains(p);
 	}
+
+	/*
+	public boolean inSubAlley(Pos p) {
+		return subPoints.contains(p);
+	}
+	*/
 }
 
 class AlleyMonitor extends Alley{
