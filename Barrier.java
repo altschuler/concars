@@ -1,21 +1,28 @@
-import java.util.ArrayList;
+public abstract class Barrier {
+	abstract public void sync(int no) throws InterruptedException;
+	abstract public void on();
+	abstract public void off();
+	abstract public void setThreshold(int k);
 
-public class Barrier {
+    public boolean atBarrier(Pos pos, int carNumber) {
+        if (carNumber < 5) {
+            return pos.row == 4 && pos.col > 2;
+        } else {
+            return pos.row == 5 && pos.col > 2;
+        }
+    }
+}
+
+class BarrierSemaphor extends Barrier {
     private Boolean active;
 
-    private int threshold;
+    private int threshold, carsArriving, carsLeaving;
 
-    private Semaphore mutex;
-
-    private Semaphore arrivalLock;
-    private Semaphore leavingLock;
-
-    private int carsArriving;
-    private int carsLeaving;
+    private Semaphore mutex, arrivalLock, leavingLock;
 
     private int[] rounds;
 
-    public Barrier() {
+    public BarrierSemaphor() {
         this.active = false;
 
         this.mutex = new Semaphore(1);
@@ -31,6 +38,7 @@ public class Barrier {
         this.rounds = new int[9];
     }
 
+	@Override
     public void sync(int no) throws InterruptedException {
 
         this.mutex.P();
@@ -91,6 +99,7 @@ public class Barrier {
         }
     }
 
+	@Override
     public void on() {
         try {
             this.mutex.P();
@@ -112,6 +121,7 @@ public class Barrier {
         }
     }
 
+	@Override
     public void off() {
         try {
 
@@ -139,11 +149,68 @@ public class Barrier {
         }
     }
 
-    public boolean atBarrier(Pos pos, int carNumber) {
-        if (carNumber < 5) {
-            return pos.row == 4 && pos.col > 2;
-        } else {
-            return pos.row == 5 && pos.col > 2;
-        }
-    }
+	@Override
+	public void setThreshold(int k) {
+		// TODO Auto-generated method stub		
+	}
+
+}
+
+class BarrierMonitor extends Barrier {
+
+	boolean on = false;
+	int cars = 0, threshold = 9, turn = 0;
+
+	@Override
+	public void sync(int no) throws InterruptedException {
+		syncS(no);
+	}
+
+	@Override
+	public void on() {
+		onS();
+	}
+
+	@Override
+	public void off() {
+		offS();
+	}
+
+	@Override
+	public void setThreshold(int k) {
+		setThresholdS(k);
+	}
+
+	synchronized public void syncS(int no) throws InterruptedException {
+		if(on) {
+			int currentTurn = turn;
+			cars++;
+			if(cars >= threshold) {
+				cars = 0;
+				turn++;
+				notifyAll();
+			} else
+				while(on && turn == currentTurn) wait();
+		}
+	}
+
+	synchronized public void onS() {
+		on = true;
+		cars = 0;
+		turn = 0;
+	}
+
+	synchronized public void offS() {
+		on = false;
+		notifyAll();
+	}
+
+	synchronized public void setThresholdS(int k) {
+		threshold = k;
+		if(cars >= threshold) {
+			cars = 0;
+			turn++;
+			notifyAll();
+		}
+	}
 }
