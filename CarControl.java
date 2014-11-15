@@ -69,9 +69,9 @@ class Car extends Thread {
 
 	SemFields semFields;
 
-	AlleyMonitor alley;
+	Alley alley;
 
-	public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, AlleyMonitor alley, Barrier barrier) {
+	public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley, Barrier barrier) {
 
 		this.no = no;
 		this.cd = cd;
@@ -190,12 +190,13 @@ class Car extends Thread {
 }
 
 public class CarControl implements CarControlI {
-
+	public static final boolean USE_MONITORS = true;
+	
 	CarDisplayI cd; // Reference to GUI
 	Car[] car; // Cars
 	Gate[] gate; // Gates
 	SemFields semFields; // Spaces
-	AlleyMonitor alley; // Alley
+	Alley alley; // Alley
     Barrier barrier;
 
     public CarControl(CarDisplayI cd) {
@@ -205,7 +206,10 @@ public class CarControl implements CarControlI {
 
 		semFields = new SemFields(11, 12);
 
-		alley = new AlleyMonitor();
+		if(USE_MONITORS)
+			alley = new AlleyMonitor();
+		else
+			alley = new AlleySemaphor();
         barrier = new Barrier();
 
 		for (int no = 0; no < 9; no++) {
@@ -305,6 +309,10 @@ abstract class Alley {
         return points.contains(p);
 	}
 
+	abstract public void enter(int no) throws InterruptedException;
+
+	abstract public void leave(int no) throws InterruptedException;
+
 	/*
 	public boolean inSubAlley(Pos p) {
 		return subPoints.contains(p);
@@ -317,14 +325,22 @@ class AlleyMonitor extends Alley{
 		super();
 	}
 
-	synchronized public void enter(int no) throws InterruptedException {
+	public void enter(int no) throws InterruptedException {
+		enterS(no);
+	}
+
+	synchronized public void enterS(int no) throws InterruptedException {
 		int dir = noToDir(no);
 		while(dir == -alleyDir) { wait(); }
 		cars++;
 		alleyDir = dir;
 	}
 
-	synchronized public void leave(int no) throws InterruptedException {
+	public void leave(int no) throws InterruptedException {
+		leaveS(no);
+	}
+
+	synchronized public void leaveS(int no) throws InterruptedException {
 		cars--;
 		if(cars == 0) { notifyAll(); alleyDir = 0; }
 	}
