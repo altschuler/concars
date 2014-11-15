@@ -4,8 +4,8 @@ public abstract class Barrier {
 	abstract public void off();
 	abstract public void setThreshold(int k);
 
-    public boolean atBarrier(Pos pos, int carNumber) {
-        if (carNumber < 5)
+    public boolean atBarrier(Pos pos, int no) {
+        if (no < 5)
             return pos.row == 4 && pos.col > 2;
         else
             return pos.row == 5 && pos.col > 2;
@@ -188,7 +188,7 @@ class BarrierMonitor extends Barrier {
 		cars = 0;
 		for(int i = 0; i < 9; i++) {
 			waiting[i] = false;
-			pass[i] = false;
+			pass[i] = true;
 		}
 	}
 
