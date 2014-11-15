@@ -5,11 +5,10 @@ public abstract class Barrier {
 	abstract public void setThreshold(int k);
 
     public boolean atBarrier(Pos pos, int carNumber) {
-        if (carNumber < 5) {
+        if (carNumber < 5)
             return pos.row == 4 && pos.col > 2;
-        } else {
+        else
             return pos.row == 5 && pos.col > 2;
-        }
     }
 }
 
@@ -162,26 +161,7 @@ class BarrierMonitor extends Barrier {
 	int cars = 0, threshold = 9, turn = 0;
 
 	@Override
-	public void sync(int no) throws InterruptedException {
-		syncS(no);
-	}
-
-	@Override
-	public void on() {
-		onS();
-	}
-
-	@Override
-	public void off() {
-		offS();
-	}
-
-	@Override
-	public void setThreshold(int k) {
-		setThresholdS(k);
-	}
-
-	synchronized public void syncS(int no) throws InterruptedException {
+	synchronized public void sync(int no) throws InterruptedException {
 		if(on) {
 			int currentTurn = turn;
 			cars++;
@@ -194,18 +174,21 @@ class BarrierMonitor extends Barrier {
 		}
 	}
 
-	synchronized public void onS() {
+	@Override
+	synchronized public void on() {
 		on = true;
 		cars = 0;
 		turn = 0;
 	}
 
-	synchronized public void offS() {
+	@Override
+	synchronized public void off() {
 		on = false;
 		notifyAll();
 	}
 
-	synchronized public void setThresholdS(int k) {
+	@Override
+	synchronized public void setThreshold(int k) {
 		threshold = k;
 		if(cars >= threshold) {
 			cars = 0;

@@ -320,22 +320,14 @@ class AlleyMonitor extends Alley{
 		super();
 	}
 
-	public void enter(int no) throws InterruptedException {
-		enterS(no);
-	}
-
-	synchronized public void enterS(int no) throws InterruptedException {
+	synchronized public void enter(int no) throws InterruptedException {
 		int dir = noToDir(no);
 		while(dir == -alleyDir) { wait(); }
 		cars++;
 		alleyDir = dir;
 	}
 
-	public void leave(int no) throws InterruptedException {
-		leaveS(no);
-	}
-
-	synchronized public void leaveS(int no) throws InterruptedException {
+	synchronized public void leave(int no) throws InterruptedException {
 		cars--;
 		if(cars == 0) { notifyAll(); alleyDir = 0; }
 	}
