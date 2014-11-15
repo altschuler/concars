@@ -152,19 +152,17 @@ class Car extends Thread {
 				newpos = nextPos(curpos);
 
                 // Alley handling
-                Boolean curIn = alley.inAlley(curpos);
-                Boolean newIn = alley.inAlley(newpos);
+                Boolean curIn = alley.inAlley(curpos),
+                		newIn = alley.inAlley(newpos);
 
-				if (newIn && !curIn) {
+				if (newIn && !curIn)
                     alley.enter(no);
-				} else if(!newIn && curIn) {
+				else if(!newIn && curIn)
                     alley.leave(no);
-				}
 
                 // Barrier handling
-                if (barrier.atBarrier(curpos, no)) {
+                if (barrier.atBarrier(curpos, no))
                     barrier.sync(no);
-                }
 
                 // Move to new position
 				semFields.P(newpos);
@@ -206,11 +204,13 @@ public class CarControl implements CarControlI {
 
 		semFields = new SemFields(11, 12);
 
-		if(USE_MONITORS)
+		if(USE_MONITORS) {
 			alley = new AlleyMonitor();
-		else
+        	barrier = new BarrierMonitor();
+    	} else {
 			alley = new AlleySemaphor();
-        barrier = new Barrier();
+        	barrier = new BarrierSemaphor();
+		}
 
 		for (int no = 0; no < 9; no++) {
 			gate[no] = new Gate();
@@ -238,13 +238,8 @@ public class CarControl implements CarControlI {
 	}
 
 	public void barrierSet(int k) {
-		cd.println("Barrier threshold setting not implemented in this version");
-		// This sleep is for illustrating how blocking affects the GUI
-		// Remove when feature is properly implemented.
-		try {
-			Thread.sleep(3000);
-		} catch (InterruptedException e) {
-		}
+		cd.println("Barrier threshold set to " + k);
+		barrier.setThreshold(k);
 	}
 
 	public void removeCar(int no) {
