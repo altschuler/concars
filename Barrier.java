@@ -158,19 +158,27 @@ class BarrierSemaphor extends Barrier {
 class BarrierMonitor extends Barrier {
 
 	boolean on = false;
-	int cars = 0, threshold = 9, turn = 0;
+	boolean[] waiting = new boolean[9], pass = new boolean[9];
+	int cars = 0, threshold = 9;
 
 	@Override
 	synchronized public void sync(int no) throws InterruptedException {
 		if(on) {
-			int currentTurn = turn;
 			cars++;
 			if(cars >= threshold) {
+				for(int i = 0; i < 9; i++) {
+					if(waiting[i]) {
+						pass[i] = true;
+						waiting[i] = false;
+					}
+				}
 				cars = 0;
-				turn++;
 				notifyAll();
-			} else
-				while(on && turn == currentTurn) wait();
+			} else {
+				waiting[no] = true;
+				pass[no] = false;
+				while(on && !pass[no]) wait();
+			}
 		}
 	}
 
@@ -178,7 +186,10 @@ class BarrierMonitor extends Barrier {
 	synchronized public void on() {
 		on = true;
 		cars = 0;
-		turn = 0;
+		for(int i = 0; i < 9; i++) {
+			waiting[i] = false;
+			pass[i] = false;
+		}
 	}
 
 	@Override
@@ -191,8 +202,13 @@ class BarrierMonitor extends Barrier {
 	synchronized public void setThreshold(int k) {
 		threshold = k;
 		if(cars >= threshold) {
+			for(int i = 0; i < 9; i++) {
+				if(waiting[i]) {
+					pass[i] = true;
+					waiting[i] = false;
+				}
+			}
 			cars = 0;
-			turn++;
 			notifyAll();
 		}
 	}
