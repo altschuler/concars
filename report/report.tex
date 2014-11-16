@@ -1,0 +1,76 @@
+\documentclass{article}
+
+\usepackage{fullpage}
+\usepackage[latin1]{inputenc}
+\usepackage{listings}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{caption}
+\usepackage{tikz}
+\usepackage{enumitem}
+\usepackage{colortbl}
+\usepackage{float}
+\usepackage{xifthen}
+
+\setlength{\parindent}{0pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\setlength{\headheight}{15pt}
+\setlength{\headsep}{25pt}
+\lfoot{}
+\rfoot{Page \thepage{}~of~\pageref{LastPage}}
+\lhead{Concurrrent Programming}
+\chead{}
+\rhead{Mandatory assignment}
+
+\definecolor{thegrey}{rgb}{0.9,0.9,0.9}
+\lstset{language=Java, %
+  keywordstyle=\color{blue},%
+  commentstyle=\color{ForestGreen},%
+  stringstyle=\color{brown},%
+  basicstyle=\ttfamily\normalsize,%
+  %frame=lines, %
+  backgroundcolor=\color{thegrey},%
+  showspaces=false,%
+  showstringspaces=false,%
+  tabsize=4,%
+  aboveskip=10pt,%
+  belowskip=10pt, %
+  lineskip=2pt,%
+  numbers=left,%
+  numberstyle=\tiny,%
+  stepnumber=1,%
+  numbersep=5pt,%
+  numberblanklines=false, %
+  breaklines,%
+  breakatwhitespace,%
+  prebreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},%
+  breakindent=0pt
+}
+
+\begin{document}
+
+\input{step1.tex}
+% \newpage
+% \input{step2.tex}
+% \newpage
+% \input{step3.tex}
+% \newpage
+% \input{step4.tex}
+\newpage
+\input{step5.tex}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

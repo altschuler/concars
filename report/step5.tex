@@ -1,0 +1,19 @@
+\section*{Step 5 - Car service}
+
+Each car has a `repair' semaphore
+
+Two solutions
+- Check in each `run' loop whether `needsRepair', then handle it next iteration
+-- car might make one more move before being removed
+--
+
+- Send an interrupt to the car thread, catch it in the `run' loop
+-- More complex!
+-- Requires another while (true)
+-- Difficult to clean up after the car since we don't know when it was interrupted
+-- Car will be removed instantly
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "report"
+%%% End:

@@ -13,3 +13,8 @@ mandatory.iml
 out
 pan.*
 config.cfg
+/report/report.aux
+/report/report.log
+/report/report.out
+/report/report.pdf
+/report/auto/report.el
