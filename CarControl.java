@@ -71,7 +71,9 @@ class Car extends Thread {
 
 	Alley alley;
 
-	public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley, Barrier barrier) {
+    public Semaphore repairLock;
+
+    public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley, Barrier barrier) {
 
 		this.no = no;
 		this.cd = cd;
@@ -85,6 +87,8 @@ class Car extends Thread {
         this.barrier = barrier;
 
         this.semFields.P(startpos);
+
+        this.repairLock = new Semaphore(0);
 
         this.col = chooseColor();
 
@@ -135,56 +139,78 @@ class Car extends Thread {
 	}
 
 	public void run() {
-		try {
+        while (true) {
+            try {
 
-			speed = chooseSpeed();
-			curpos = startpos;
-			cd.mark(curpos, col, no);
+                speed = chooseSpeed();
+                curpos = startpos;
+                cd.mark(curpos, col, no);
 
-			while (true) {
-				sleep(speed());
+                while (true) {
+                    sleep(speed());
 
-				if (atGate(curpos)) {
-					mygate.pass();
-					speed = chooseSpeed();
-				}
+                    if (atGate(curpos)) {
+                        mygate.pass();
+                        speed = chooseSpeed();
+                    }
 
-				newpos = nextPos(curpos);
+                    newpos = nextPos(curpos);
 
-                // Alley handling
-                Boolean curIn = alley.inAlley(curpos),
-                		newIn = alley.inAlley(newpos);
+                    // Alley handling
+                    Boolean curIn = alley.inAlley(curpos),
+                            newIn = alley.inAlley(newpos);
 
-				if (newIn && !curIn)
-                    alley.enter(no);
-				else if(!newIn && curIn)
-                    alley.leave(no);
+                    if (newIn && !curIn) {
+                        alley.enter(no);
+                    } else if (!newIn && curIn) {
+                        alley.leave(no);
+                    }
 
-                // Barrier handling
-                if (barrier.atBarrier(curpos, no))
-                    barrier.sync(no);
+                    // Barrier handling
+                    if (barrier.atBarrier(curpos, no)) {
+                        barrier.sync(no);
+                    }
 
-                // Move to new position
-				semFields.P(newpos);
+                    // Move to new position
+                    semFields.P(newpos);
 
-				cd.clear(curpos);
-				cd.mark(curpos, newpos, col, no);
-				sleep(speed());
-				cd.clear(curpos, newpos);
-				cd.mark(newpos, col, no);
+                    cd.clear(curpos);
+                    cd.mark(curpos, newpos, col, no);
+                    sleep(speed());
+                    cd.clear(curpos, newpos);
+                    cd.mark(newpos, col, no);
 
-				semFields.V(curpos);
+                    semFields.V(curpos);
 
-				curpos = newpos;
-			}
+                    curpos = newpos;
+                }
 
-		} catch (Exception e) {
-			cd.println("Exception in Car no. " + no);
-			System.err.println("Exception in Car no. " + no + ":" + e);
-			e.printStackTrace();
-		}
-	}
+            } catch (Exception e) {
+                try {
+                    // Clear the current position and release the semaphore of it
+                    cd.clear(curpos);
+                    this.semFields.V(curpos);
 
+                    // If the car was interrupted after having generated a
+                    // new position it might have marked it.
+                    if (curpos != newpos && newpos != null) {
+                        cd.clear(curpos, newpos);
+                        this.semFields.V(newpos);
+                    }
+
+                    // Remove the car from the alley if it as in it
+                    if (alley.inAlley(curpos)) {
+                        alley.leave(no);
+                    }
+
+                    // Start the repair
+                    this.repairLock.P();
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
+    }
 }
 
 public class CarControl implements CarControlI {
@@ -243,11 +269,13 @@ public class CarControl implements CarControlI {
 	}
 
 	public void removeCar(int no) {
-		cd.println("Remove Car not implemented in this version");
+        this.car[no].interrupt();
+        cd.println("Car no " + no + " is sent for repair");
 	}
 
 	public void restoreCar(int no) {
-		cd.println("Restore Car not implemented in this version");
+        this.car[no].repairLock.V();
+        cd.println("Car no " + no + " is back on track");
 	}
 
 	/* Speed settings for testing purposes */
@@ -393,7 +421,7 @@ class SemFields {
         try {
             this.sems[pos.row][pos.col].P();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            // no op
         }
     }
 
