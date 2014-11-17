@@ -181,7 +181,7 @@ class Car extends Thread {
 					if (barrier.atBarrier(curpos, no))
 								barrier.sync(no);
 				} catch (InterruptedException e) {
-					//Barrier functionality not guarranteed
+					//Barrier functionality not guaranteed
 					//when interrupting
 					repair();
 				}
@@ -203,7 +203,6 @@ class Car extends Thread {
 							if(!grid.getPos(newpos)) {
 								grid.setPos(curpos, false);
 							*/
-				
 								cd.clear(curpos);
 								cd.mark(curpos, newpos, col, no);
 								sleep(speed());

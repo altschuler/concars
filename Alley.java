@@ -37,10 +37,6 @@ public abstract class Alley {
 
 class AlleyMonitor extends Alley {
 
-    public AlleyMonitor() {
-        super();
-    }
-
     synchronized public void enter(int no) throws InterruptedException {
         int dir = noToDir(no);
         while(dir == -alleyDir) { wait(); }

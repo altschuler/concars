@@ -166,12 +166,11 @@ class BarrierMonitor extends Barrier {
 		if(on) {
 			cars++;
 			if(cars >= threshold) {
-				for(int i = 0; i < 9; i++) {
+				for(int i = 0; i < 9; i++)
 					if(waiting[i]) {
 						pass[i] = true;
 						waiting[i] = false;
 					}
-				}
 				cars = 0;
 				notifyAll();
 			} else {
