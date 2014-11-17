@@ -1,8 +1,18 @@
 \section*{Step 3 - Barrier}
 
-Barrier
-You must be this tall for this ride
-no thresholds yet???
+Simple ``active'' variable for toggling state
+
+Has two ``barriers'' one for arrival and one for departure
+- Because the toddler can leave the gate and come back before everybody has been through, thus blocking someone
+-- Two barriers ensures synchronization at the second gate before the toddler can come back and block the others
+- Has two numberOfCars counters
+
+Using reverse semaphore, all cars P and when enough has arrived the semaphore is V'ed enough times to let everybody through
+
+Mutex lock around number of cars and release mechanism
+
+
+
 
 %%% Local Variables:
 %%% mode: latex
