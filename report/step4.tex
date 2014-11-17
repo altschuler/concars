@@ -1,0 +1,31 @@
+\section*{Step 4 - Monitors}
+
+synchronized, notify(), notifyAll().
+AlleyMonitor
+AlleyMonitor is the subclass of Alley implemented with monitors. The methods enter(no) and leave(no) are both synchronized, ensuring mutual exclusion. When a car calls enter, it enters a while-wait loop until the direction in the alley is not opposite of the cars direction. When this happens, the alley is either empty or contains cars in the same direction, making it safe to enter. The car increments the variable cars, assigns the direction of the alley equal to its own and terminates the method.
+
+The leave method first decrements cars. In case cars is now equal to zero, notifyAll() is called, waking all the opposite cars, and the direction of the alley is set to zero.
+
+TODO: Discussion.
+BarrierMonitor
+The BarrierMoniter class is the barrier implemented using moniters. When a car calls the sync method, it first increments the integer cars, and then checks whether threshold is larger than cars. If it is, the car sets waiting[no] to true and pass[no] to false. Both of these are boolean arrays of length 9, where the first keeps track of waiting cars and the second signals waiting cars that they can leave. The car then enters a while-wait loop, only exiting if the barrier is turned off or if pass[no] is true. If threshold is not larger than cars, the car calls notifyAll(), waking all waiting cars, and then changes pass[i] to true if waiting[i] is true for all i in 0..9.
+
+After either of these cases, the method terminates, and the car can move through the barrier.
+Turning the barrier on or off through on() and off() will simply switch the boolean on. This variables is checked in the while-loop and before anything else in sync. In addition, on() will set all waiting values to false and all pass to true and call notifyAll().
+
+The biggest hurdle was for cars to know whether they could leave or not, no matter how slow the thread might be. An early solution was a turn integer which would increment every time the threshold was exceeded. Every car in the queue would save the value of turn when they entered the queue, and could figure out if turn had changed and leave if it had. The problem was that turn might be incremented through all integers until it hit the exact same value before a car woke up.
+
+Even though this was exceedingly improbable, the final solution is strictly better since it is always safe. Pass[i] would only become false when car i entered the queue. Any car can wait as long as it wants before leaving the queue, and it would never suddenly not have permission. The on method also sets all pass values to true to ensure this.
+
+Required barrier methods on(), off() and sync(no) are all synchronized to ensure mutual exclusion. The auxiliary method atBarrier(pos,no) however is not, since it does not access any critical region.
+
+The monitor solution for both barrier and alley was much shorter and simpler than their semaphore equivalents. Even if they had significantly worse performance, they are much prefered to their semaphore counterparts.
+
+\section*{Step 4 - E}
+
+Implemented thresholds - barrier still can't stop ur mom owned dayum xxoxoxo
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "report"
+%%% End:
