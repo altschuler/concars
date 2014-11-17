@@ -5,9 +5,6 @@
 //Hans Henrik Løvengreen    Oct 6, 2014
 
 import java.awt.Color;
-import java.util.HashSet;
-import java.util.Set;
-
 
 class Gate {
 
@@ -158,6 +155,7 @@ class Car extends Thread {
 				alley.leave(no);
 			curpos = cd.getStartPos(no);
 			this.repairLock.P();
+			cd.mark(curpos, col, no);
 		} catch (InterruptedException e) {e.printStackTrace();}
 		//TODO: Should this swallow the exception?
 		//This thread will never be interrupted, since
@@ -177,66 +175,67 @@ class Car extends Thread {
 					speed = chooseSpeed();
 				}			
 				newpos = nextPos(curpos);
-			} catch (InterruptedException e) {
-				repair();
-			}
-			//Barrier
-			try {
-				if (barrier.atBarrier(curpos, no))
-							barrier.sync(no);
-			} catch (InterruptedException e) {
-				//Barrier functionality not guarranteed
-				//when interrupting
-				repair();
-			}
-
-			//Alley
-			Boolean curIn = alley.inAlley(curpos),
-					newIn = alley.inAlley(newpos);
-			try {
-				if (newIn && !curIn)
-					alley.enter(no);
-				else if (!newIn && curIn)
-					alley.leave(no);
-				//Translation
+				
+				//Barrier
 				try {
-					//grid.enter();
-					semFields.P(newpos);
-					try {
-						/*
-						if(!grid.getPos(newpos)) {
-							grid.setPos(curpos, false);
-						*/
-			
-							cd.clear(curpos);
-							cd.mark(curpos, newpos, col, no);
-							sleep(speed());
-							cd.clear(curpos, newpos);
-							cd.mark(newpos, col, no);
-
-							semFields.V(curpos);
-							
-							curpos = newpos;
-							//grid.setPos(curpos, true);
-						//}
-						//grid.exit();
-;
-					} catch (InterruptedException e) {
-						//The car must return mutex to default when
-						//interrupted during translation
-						cd.clear(curpos, newpos);
-						//grid.exit();
-						semFields.V(newpos);
-						repair();
-					}
+					if (barrier.atBarrier(curpos, no))
+								barrier.sync(no);
 				} catch (InterruptedException e) {
-					//The car must not finish the mutex code
-					//when interrupted before translation.
+					//Barrier functionality not guarranteed
+					//when interrupting
 					repair();
 				}
-			} catch (InterruptedException e) {
-				//The car must not enter translation code
-				//when interrupted during alley entering.
+
+				//Alley
+				Boolean curIn = alley.inAlley(curpos),
+						newIn = alley.inAlley(newpos);
+				try {
+					if (newIn && !curIn)
+						alley.enter(no);
+					else if (!newIn && curIn)
+						alley.leave(no);
+					//Translation
+					try {
+						//grid.enter();
+						semFields.P(newpos);
+						try {
+							/*
+							if(!grid.getPos(newpos)) {
+								grid.setPos(curpos, false);
+							*/
+				
+								cd.clear(curpos);
+								cd.mark(curpos, newpos, col, no);
+								sleep(speed());
+								cd.clear(curpos, newpos);
+								cd.mark(newpos, col, no);
+
+								semFields.V(curpos);
+								
+								curpos = newpos;
+								//grid.setPos(curpos, true);
+							//}
+							//grid.exit();;
+						} catch (InterruptedException e) { //Translation sleep interrupt
+							//The car must return mutex to default when
+							//interrupted during translation
+							//cd.clear(curpos, newpos);
+							//grid.exit();
+							cd.clear(newpos);
+							semFields.V(newpos);
+							repair();
+						}
+					} catch (InterruptedException e) { //Enter interrupt
+						//The car must not finish the mutex code
+						//when interrupted before translation.
+						repair();
+					}
+				} catch (InterruptedException e) { //Alley interrupt
+					//The car must not enter translation code
+					//when interrupted during alley entering.
+					repair();
+				}
+			} catch (InterruptedException e) { //Initial sleep interrupt
 				repair();
 			}
 		}
@@ -265,7 +264,7 @@ public class CarControl implements CarControlI {
         	barrier = new BarrierMonitor();
     	} else {
 			alley = new AlleySemaphore();
-		barrier = new BarrierSemaphore();
+			barrier = new BarrierSemaphore();
 		}
 
 		for (int no = 0; no < 9; no++) {
