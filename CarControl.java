@@ -154,6 +154,7 @@ class Car extends Thread {
 			if (alley.inAlley(curpos))
 				alley.leave(no);
 			curpos = cd.getStartPos(no);
+			semFields.P(curpos);
 			this.repairLock.P();
 			cd.mark(curpos, col, no);
 		} catch (InterruptedException e) {e.printStackTrace();}
@@ -177,64 +178,43 @@ class Car extends Thread {
 				newpos = nextPos(curpos);
 				
 				//Barrier
-				try {
-					if (barrier.atBarrier(curpos, no))
-								barrier.sync(no);
-				} catch (InterruptedException e) {
-					//Barrier functionality not guaranteed
-					//when interrupting
-					repair();
-				}
+				if (barrier.atBarrier(curpos, no))
+							barrier.sync(no);
 
 				//Alley
 				Boolean curIn = alley.inAlley(curpos),
 						newIn = alley.inAlley(newpos);
+				if (newIn && !curIn)
+					alley.enter(no);
+				else if (!newIn && curIn)
+					alley.leave(no);
+				//Translation
+				//grid.enter();
+				semFields.P(newpos);
 				try {
-					if (newIn && !curIn)
-						alley.enter(no);
-					else if (!newIn && curIn)
-						alley.leave(no);
-					//Translation
-					try {
-						//grid.enter();
-						semFields.P(newpos);
-						try {
-							/*
-							if(!grid.getPos(newpos)) {
-								grid.setPos(curpos, false);
-							*/
-								cd.clear(curpos);
-								cd.mark(curpos, newpos, col, no);
-								sleep(speed());
-								cd.clear(curpos, newpos);
-								cd.mark(newpos, col, no);
+					/*
+					if(!grid.getPos(newpos)) {
+						grid.setPos(curpos, false);
+					*/
+						cd.clear(curpos);
+						cd.mark(curpos, newpos, col, no);
+						sleep(speed());
+						cd.clear(curpos, newpos);
+						cd.mark(newpos, col, no);
 
-								semFields.V(curpos);
-								
-								curpos = newpos;
-								//grid.setPos(curpos, true);
-							//}
-							//grid.exit();;
-						} catch (InterruptedException e) { //Translation sleep interrupt
-							//The car must return mutex to default when
-							//interrupted during translation
-							//cd.clear(curpos, newpos);
-							//grid.exit();
-							cd.clear(newpos);
-							semFields.V(newpos);
-							repair();
-						}
-					} catch (InterruptedException e) { //Enter interrupt
-						//The car must not finish the mutex code
-						//when interrupted before translation.
-						repair();
-					}
-				} catch (InterruptedException e) { //Alley interrupt
-					//The car must not enter translation code
-					//when interrupted during alley entering.
+						semFields.V(curpos);
+						
+						curpos = newpos;
+						//grid.setPos(curpos, true);
+					//}
+					//grid.exit();;
+				} catch (InterruptedException e) { //Translation sleep interrupt
+					cd.clear(newpos);
+					//grid.exit();
+					semFields.V(newpos);
 					repair();
 				}
-			} catch (InterruptedException e) { //Initial sleep interrupt
+			} catch (InterruptedException e) {
 				repair();
 			}
 		}
