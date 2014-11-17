@@ -16,7 +16,7 @@ public class Semaphore {
             throw new Error("Semaphore initialized to negative value: " + s0);
     }
 
-    public synchronized void P() 
+    public synchronized void P()
     throws InterruptedException {
         while (s == 0) wait();
         s--;
