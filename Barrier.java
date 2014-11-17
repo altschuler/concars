@@ -12,7 +12,7 @@ public abstract class Barrier {
     }
 }
 
-class BarrierSemaphor extends Barrier {
+class BarrierSemaphore extends Barrier {
     private Boolean active;
 
     private int threshold, carsArriving, carsLeaving;
@@ -21,7 +21,7 @@ class BarrierSemaphor extends Barrier {
 
     private int[] rounds;
 
-    public BarrierSemaphor() {
+    public BarrierSemaphore() {
         this.active = false;
 
         this.mutex = new Semaphore(1);
