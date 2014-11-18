@@ -7,13 +7,13 @@ Compared to the semaphore solution, the monitor solutions for both barrier and a
 
 When we refer to a \emph{while-wait} loop, it is short hand for a while-loop whose body only contains a \texttt{wait} call with the specified condition.
 
-\subsection{AlleyMonitor}
+\subsection*{AlleyMonitor}
 %TODO Theory
 %TODO Short desc
 
 Writing the monitor version of the alley was straightforward. It did not seem necessary to consider other solutions, since this one is simple and cost effective.
 
-\subsubsection{Implementation}
+\subsubsection*{Implementation}
 \texttt{AlleyMonitor} is the subclass of \texttt{Alley} implemented with monitors. The overridden methods \texttt{enter(int no)} and \texttt{leave(no)} are both \texttt{synchronized}, making them mutual exclusive.
 
 When a thread calls \texttt{enter} with the first argument being the car number, it enters a while-wait loop until the direction in the alley is not opposite of the cars direction. In this case, the alley is either empty (direction equals zero) or only contains cars going in the same direction, making it safe to enter. The car increments the variable cars, assigns the direction of the alley equal to its own (which only has an effect in case the alley was empty) and terminates the method.
@@ -27,7 +27,7 @@ The biggest hurdle was somehow signaling cars to know if they could leave, no ma
 
 The final solution is always safe, albeit uses a bit more memory (negligible with only $9$ cars). \texttt{pass[i]} would only become \texttt{false} when car $i$ entered the queue. Therefore the car can wait an arbitrary amount of time, and still pass the barrier. Both of the solutions tackled spurious wakeup by saving the state of the barrier, and comparing when the thread wakes up.
 
-\subsubsection{Implementation}
+\subsubsection*{Implementation}
 The \texttt{BarrierMonitor} class, extended from \texttt{Barrier}, is the barrier implemented using monitors. When instantiated, the integers \texttt{cars} and \texttt{threshold} is assigned $0$ and $9$ respectively. A boolean \texttt{on} is set to \texttt{false}, since the barrier is off by default. Two boolean arrays \texttt{waiting} and \texttt{pass}, both of length $9$ (the amount of cars), is initialized with all values \texttt{false}. The monitor contains the three required methods, \texttt{sync(int no)}, \texttt{on()} and \texttt{off()}, overridden from the super class with an additional \texttt{synchronized} keyword to ensure mutual exclusion. The method \texttt{setThreshold(int k)} is also overridden as \texttt{synchronized}.
 
 When a thread/car calls the \texttt{sync} method, the argument being equal to the car number, \texttt{cars} is incremented and checked if it is less than or equal to \texttt{threshold}.
@@ -47,5 +47,5 @@ Thus the solution works, even if the threshold has been set lower than the curre
 
 There has not been attempts at alternative solutions, since the current one is simple and works without errors.
 
-\subsubsection{Implementation}
+\subsubsection*{Implementation}
 The \texttt{setThreshold(int k)} method takes an integer argument, which \texttt{threshold} is assigned to. Then if it is less than or equal to \texttt{cars}, it releases the cars in the same manner as in \texttt{enter}.
