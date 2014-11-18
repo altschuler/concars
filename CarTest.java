@@ -26,31 +26,40 @@ public class CarTest extends Thread {
         try {
             switch (testno) { 
                 case 0:
-                    // Demonstration of startAll/stopAll.
-                    // Should let the cars go one round (unless very fast)
+                    // This test should show one group of cars going into the alley
+                    // while the other groups waits for them to exit
+                    cars.println("Testing that cars will not deadlock in the alley");
+
+                    cars.setSlow(true);
                     cars.startAll();
-                    sleep(3000);
+                    sleep(1000);
                     cars.stopAll();
+                    cars.setSlow(false);
                     break;
 
                 case 1:
-                    cars.println("Testing barrier works when toggled instantly");
+                    // This test should show cars passing the barrier at various times,
+                    // never getting stuck and finally returning to their gate
+                    cars.println("Testing barrier when toggled instantly");
+
+                    setCarSpeed(20); // speed things up
 
                     cars.barrierOn();
-                    cars.startAll();
 
-                    sleep(4000);
+                    // start all but car #0
+                    for (int i = 1; i < 9; i++)
+                        cars.startCar(i);
+
+                    sleep(1000);
 
                     cars.barrierOff();
                     cars.barrierOn();
-
-                    sleep(4000);
-
-                    cars.barrierOff();
-                    cars.barrierOn();
-                    cars.barrierOff();
 
                     cars.stopAll();
+
+                    sleep(2000);
+
+                    setCarSpeed(50); // reset speed
                     break;
 
                 case 2:
@@ -65,9 +74,10 @@ public class CarTest extends Thread {
                     // start with lowest threshold
                     cars.barrierSet(2);
 
+                    cars.startCar(0);
+
                     // Test thresholds value 2 through 6
                     for (int t = 3; t < 11; t++) {
-                        cars.startCar(0);
                         sleep(1000);
                         cars.startCar(t - 2);
                         sleep(100); // let them through
@@ -78,7 +88,8 @@ public class CarTest extends Thread {
 
                     sleep(1000);
 
-                    setCarSpeed(50); // reset speed
+                    // Reset speed
+                    setCarSpeed(50);
                     break;
 
                 case 3:
@@ -102,6 +113,71 @@ public class CarTest extends Thread {
 
                     cars.stopAll();
 
+                    // Reset speed
+                    setCarSpeed(50);
+                    break;
+
+                case 4:
+                    cars.println("Test regular removal and restoration");
+
+                    cars.startCar(1);
+                    sleep(1000);
+
+                    cars.removeCar(1);
+                    sleep(1000);
+                    cars.restoreCar(1);
+                    sleep(100);
+                    cars.stopCar(1);
+
+                    // Remove the car from its start position
+                    sleep(4000);
+                    cars.removeCar(1);
+                    sleep(500);
+                    cars.restoreCar(1);
+
+                    sleep(500);
+                    cars.startCar(1);
+
+                    sleep(500);
+                    cars.stopCar(1);
+                    break;
+
+                case 5:
+                    cars.println("Test unreal repairing speeds");
+
+                    cars.startCar(1);
+                    cars.startCar(2);
+
+                    sleep(1000);
+
+                    cars.removeCar(1);
+                    cars.restoreCar(1);
+
+                    cars.removeCar(2);
+                    cars.restoreCar(2);
+
+                    sleep(1000);
+
+                    cars.startCar(1);
+                    cars.startCar(2);
+
+                    sleep(500);
+
+                    cars.stopAll();
+                    break;
+
+                case 6:
+                    cars.barrierOn();
+
+                    cars.startCar(1);
+                    cars.startCar(2);
+                    cars.startCar(3);
+
+                    sleep(1000);
+
+                    cars.barrierOff();
+                    cars.barrierOn();
+                    break;
 
                 case 19:
                     // Demonstration of speed setting.
