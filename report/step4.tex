@@ -1,27 +1,30 @@
 \section*{Step 4 - Monitors}
+synchronized, notify(), notifyAll().\\
+while-wait loop
+\subsection{AlleyMonitor}
+{\texttt AlleyMonitor} is the subclass of {\texttt Alley} implemented with monitors. The methods {\texttt enter(int no)} and {\texttt leave(no)} are both {\texttt synchronized}, making them mutual exclusive. When a thread calls {\texttt enter} with the first argument being the car number, it enters a while-wait loop until the direction in the alley is not opposite of the cars direction. In this case, the alley is either empty (direction equals zero) or only contains cars going in the same direction, making it safe to enter. The car increments the variable cars, assigns the direction of the alley equal to its own (which only has an effect in case the alley was empty) and terminates the method.\\
 
-synchronized, notify(), notifyAll().
-AlleyMonitor
-AlleyMonitor is the subclass of Alley implemented with monitors. The methods enter(no) and leave(no) are both synchronized, ensuring mutual exclusion. When a car calls enter, it enters a while-wait loop until the direction in the alley is not opposite of the cars direction. When this happens, the alley is either empty or contains cars in the same direction, making it safe to enter. The car increments the variable cars, assigns the direction of the alley equal to its own and terminates the method.
+The leave method decrements the cars variable, possibly resulting in cars equal to zero. In this case, the thread calls {\tt notifyAll}, waking all the cars in the queue (cars which could not enter yet), and the direction of the alley is set to zero.\\
 
-The leave method first decrements cars. In case cars is now equal to zero, notifyAll() is called, waking all the opposite cars, and the direction of the alley is set to zero.
+Writing the monitor version of the alley was straightforward. It did not seem necessary to consider other solutions, since this one is simple and cost effective.
 
-TODO: Discussion.
-BarrierMonitor
-The BarrierMoniter class is the barrier implemented using moniters. When a car calls the sync method, it first increments the integer cars, and then checks whether threshold is larger than cars. If it is, the car sets waiting[no] to true and pass[no] to false. Both of these are boolean arrays of length 9, where the first keeps track of waiting cars and the second signals waiting cars that they can leave. The car then enters a while-wait loop, only exiting if the barrier is turned off or if pass[no] is true. If threshold is not larger than cars, the car calls notifyAll(), waking all waiting cars, and then changes pass[i] to true if waiting[i] is true for all i in 0..9.
+\subsection*{BarrierMonitor}
+The {\texttt BarrierMonitor} class, extended from {\texttt Barrier}, is the barrier implemented using monitors. When instantiated, the integers {\texttt cars} and {\texttt threshold} is assigned $0$ and $9$ respectively. A boolean {\texttt on} is set to {\texttt false}, since the barrier is off by default. Two boolean arrays {\texttt waiting} and {\texttt pass}, both of length $9$ (the amount of cars), is initialized with all values {\texttt false}. The monitor contains the three required methods, {\texttt sync(int no)}, {\texttt on()} and {\texttt off()}, overridden from the super class with an additional {\texttt synchronized} keyword to ensure mutual exclusion. The method {\texttt setThreshold(int k)} is also overridden as {\texttt synchronized}.\\
 
-After either of these cases, the method terminates, and the car can move through the barrier.
-Turning the barrier on or off through on() and off() will simply switch the boolean on. This variables is checked in the while-loop and before anything else in sync. In addition, on() will set all waiting values to false and all pass to true and call notifyAll().
+When a thread/car calls the {\texttt sync} method, the argument being equal to the car number, {\texttt cars} is incremented and checked if it is less than or equal to {\texttt threshold}.\\
+If it is, the car sets {\texttt waiting[no]} to {\texttt true} and {\texttt pass[no]} to {\texttt false}. The first array keeps track of waiting cars and the second signals when they can leave. The thread then enters a while-wait loop, only exiting it if/when the barrier is turned off or if {\texttt pass[no]} is {\texttt true}.\\
+In case {\texttt cars} is less than or equal to {\textt threshold}, the thread calls {\texttt notifyAll}, waking all waiting cars, and then for all $i=0..9$ assigns {\texttt pass[i]} to {\texttt true} if {\texttt waiting[i]} is {\texttt true}.\\
+After either of these cases, the method terminates, and the thread can continue execution of {\texttt run}, allowing the car to move through the barrier.\\
 
-The biggest hurdle was for cars to know whether they could leave or not, no matter how slow the thread might be. An early solution was a turn integer which would increment every time the threshold was exceeded. Every car in the queue would save the value of turn when they entered the queue, and could figure out if turn had changed and leave if it had. The problem was that turn might be incremented through all integers until it hit the exact same value before a car woke up.
+Turning the barrier on or off through {\texttt on} and {\texttt off} flips the value of {\texttt on} respectively. In addition, {\texttt on} will set all values of {\texttt waiting} to {\texttt false} and all of {\texttt pass} to {\texttt true}, wiping the memory of the barrier. {\texttt off} calls {\texttt notifyAll}, allowing all waiting cars to leave. Since {\texttt on} wipes the memory of the barrier, all cars are able to leave even if the barrier is flipped from {\texttt on} and {\texttt off} quickly.\\
 
-Even though this was exceedingly improbable, the final solution is strictly better since it is always safe. Pass[i] would only become false when car i entered the queue. Any car can wait as long as it wants before leaving the queue, and it would never suddenly not have permission. The on method also sets all pass values to true to ensure this.
+The biggest hurdle was somehow signaling cars to know if they could leave, no matter how slow any car might be. The goal was to allow a car to leave when the threshold had been met, even if other cars had already queued up again. With a variable threshold, this meant other cars could pass a lot of times before some slow car would leave the barrier. An early solution was an integer {\texttt turn} which would increment every time the threshold was exceeded. Every car in the queue would save the value of {\texttt turn} when they entered the queue, and could tell if the barrier had been opened since they entered the queue. The problem, though improbable, was that {\texttt turn} might be incremented through all integers until it hit the exact same value before a car woke up.\\
 
-Required barrier methods on(), off() and sync(no) are all synchronized to ensure mutual exclusion. The auxiliary method atBarrier(pos,no) however is not, since it does not access any critical region.
+The final solution is always safe, albeit uses a bit more memory (negligible with only $9$ cars). {\texttt pass[i]} would only become {\textt false} when car $i$ entered the queue. Therefore the car can wait an arbitrary amount of time, and still pass the barrier. Both of the solutions tackled spurious wakeup by saving the state of the barrier, and comparing when the thread wakes up.\\
 
-The monitor solution for both barrier and alley was much shorter and simpler than their semaphore equivalents. Even if they had significantly worse performance, they are much prefered to their semaphore counterparts.
+Compared to the semaphore solution, the monitor solutions for both barrier and alley are much shorter, simpler and elegant. They are much preferred to their semaphore counterparts.
 
-\section*{Step 4 - E}
+\subsection*{Step 4 - E}
 
 Implemented thresholds - barrier still can't stop ur mom owned dayum xxoxoxo
 
