@@ -67,7 +67,7 @@ private void syncGate(BarrierGate gate) throws InterruptedException {
 
 If the gate is active we check whether the threshold of cars is met with the current car (hence the \texttt{gate.cars + 1 < this.threshold}). If it is not we increment the number of cars waiting to pass, and request a token from the gates semaphore, making the car wait. If the threshold is met, we simply open the gate and release all the cars.
 
-The barrier can be toggled on and off by the methods \texttt{on} and \texttt{off}, which is what the GUI methods \texttt{barrierOn} and \texttt{barrierOff} call, respectively. \texttt{on} method does nothing but setting \texttt{active = true}, and \texttt{off} obviously sets \texttt{active = false}, but it also opens both gates.
+The barrier can be toggled on and off by the methods \texttt{on} and \texttt{off}, which is what the GUI methods \texttt{barrierOn} and \texttt{barrierOff} call, respectively. The \texttt{on} method does nothing but setting \texttt{active = true}, and \texttt{off} obviously sets \texttt{active = false}, but it also opens both gates.
 
 %%% Local Variables:
 %%% mode: latex
