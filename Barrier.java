@@ -15,9 +15,8 @@ public abstract class Barrier {
 class BarrierSemaphore extends Barrier {
     private Boolean active;
 
-    private int threshold, carsArriving, carsLeaving;
-
-    private Semaphore mutex, arrivalLock, leavingLock;
+    private int threshold, carsArriving, carsDeparturing;
+    private Semaphore mutex, arrivalLock, departureLock;
 
     private int[] rounds;
 
@@ -27,10 +26,10 @@ class BarrierSemaphore extends Barrier {
         this.mutex = new Semaphore(1);
 
         this.arrivalLock = new Semaphore(0);
-        this.leavingLock = new Semaphore(0);
+        this.departureLock = new Semaphore(0);
 
         this.carsArriving = 0;
-        this.carsLeaving = 0;
+        this.carsDeparturing = 0;
 
         this.threshold = 9;
 
@@ -66,23 +65,23 @@ class BarrierSemaphore extends Barrier {
 
             // LEAVING
             this.mutex.P();
-            this.carsLeaving++;
+            this.carsDeparturing++;
 
             this.rounds[no]++;
 
-            if (this.carsLeaving < this.threshold) {
+            if (this.carsDeparturing < this.threshold) {
                 // Wait for others
 
                 this.mutex.V();
 
-                this.leavingLock.P();
+                this.departureLock.P();
             } else {
                 // Give access to everyone
                 for (int i = 0; i < this.threshold - 1; i++) {
-                    this.leavingLock.V();
+                    this.departureLock.V();
                 }
 
-                this.carsLeaving = 0;
+                this.carsDeparturing = 0;
 
                 for (int r : this.rounds) {
                     System.out.println(r);
@@ -108,7 +107,7 @@ class BarrierSemaphore extends Barrier {
             // we must reset number of cars in both .on and .off because if cars
             // are leaving after .off was called they will alter the state
             this.carsArriving = 0;
-            this.carsLeaving = 0;
+            this.carsDeparturing = 0;
 
             for (int i = 0; i < this.rounds.length; i++) {
                 this.rounds[i] = 0;
@@ -130,14 +129,14 @@ class BarrierSemaphore extends Barrier {
                 this.arrivalLock.V();
             }
 
-            for (int i = 0; i < this.carsLeaving + this.carsArriving; i++) {
-                this.leavingLock.V();
+            for (int i = 0; i < this.carsDeparturing + this.carsArriving; i++) {
+                this.departureLock.V();
             }
 
             // resetting number of cars here because no remaining car should
             // give access to the others again after this
             this.carsArriving = 0;
-            this.carsLeaving = 0;
+            this.carsDeparturing = 0;
 
             this.active = false;
 
