@@ -1,14 +1,18 @@
 public abstract class Barrier {
-	abstract public void sync(int no) throws InterruptedException;
-	abstract public void on();
-	abstract public void off();
-	abstract public void setThreshold(int k);
+    abstract public void sync(int no) throws InterruptedException;
+
+    abstract public void on();
+
+    abstract public void off();
+
+    abstract public void setThreshold(int k);
 
     public boolean atBarrier(Pos pos, int no) {
-        if (no < 5)
+        if (no < 5) {
             return pos.row == 4 && pos.col > 2;
-        else
+        } else {
             return pos.row == 5 && pos.col > 2;
+        }
     }
 }
 
@@ -17,8 +21,6 @@ class BarrierSemaphore extends Barrier {
 
     private int threshold, carsArriving, carsDeparturing;
     private Semaphore mutex, arrivalLock, departureLock;
-
-    private int[] rounds;
 
     public BarrierSemaphore() {
         this.active = false;
@@ -32,72 +34,48 @@ class BarrierSemaphore extends Barrier {
         this.carsDeparturing = 0;
 
         this.threshold = 9;
-
-        this.rounds = new int[9];
     }
 
-	@Override
-    public void sync(int no) throws InterruptedException {
-
+    private void syncGate(Boolean isArrivalGate) throws InterruptedException {
         this.mutex.P();
+        Semaphore gateLock = isArrivalGate ? this.arrivalLock : this.departureLock;
 
         if (this.active) {
+            if (isArrivalGate) this.carsArriving++;
+            else               this.carsDeparturing++;
 
-            // ARRIVING
-
-            this.carsArriving++;
-
-            if (this.carsArriving < this.threshold) {
+            int cars = isArrivalGate ? this.carsArriving : this.carsDeparturing;
+            if (cars < this.threshold) {
                 // Wait for others
                 this.mutex.V();
 
-                this.arrivalLock.P();
+                gateLock.P();
             } else {
                 // Give access to everyone
                 for (int i = 0; i < this.threshold - 1; i++) {
-                    this.arrivalLock.V();
+                    gateLock.V();
                 }
 
-                this.carsArriving = 0;
-                this.mutex.V();
-            }
-
-
-            // LEAVING
-            this.mutex.P();
-            this.carsDeparturing++;
-
-            this.rounds[no]++;
-
-            if (this.carsDeparturing < this.threshold) {
-                // Wait for others
-
-                this.mutex.V();
-
-                this.departureLock.P();
-            } else {
-                // Give access to everyone
-                for (int i = 0; i < this.threshold - 1; i++) {
-                    this.departureLock.V();
-                }
-
-                this.carsDeparturing = 0;
-
-                for (int r : this.rounds) {
-                    System.out.println(r);
-                }
-                System.out.println();
+                if (isArrivalGate) this.carsArriving = 0;
+                else               this.carsDeparturing = 0;
 
                 this.mutex.V();
             }
-
         } else {
-
             this.mutex.V();
         }
     }
 
-	@Override
+    @Override
+    public void sync(int no) throws InterruptedException {
+        // Arrival gate
+        syncGate(true);
+
+        // Departure gate
+        syncGate(false);
+    }
+
+    @Override
     public void on() {
         try {
             this.mutex.P();
@@ -109,17 +87,13 @@ class BarrierSemaphore extends Barrier {
             this.carsArriving = 0;
             this.carsDeparturing = 0;
 
-            for (int i = 0; i < this.rounds.length; i++) {
-                this.rounds[i] = 0;
-            }
-
             this.mutex.V();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-	@Override
+    @Override
     public void off() {
         try {
 
@@ -129,7 +103,7 @@ class BarrierSemaphore extends Barrier {
                 this.arrivalLock.V();
             }
 
-            for (int i = 0; i < this.carsDeparturing + this.carsArriving; i++) {
+            for (int i = 0; i < this.carsDeparturing; i++) {
                 this.departureLock.V();
             }
 
@@ -147,67 +121,70 @@ class BarrierSemaphore extends Barrier {
         }
     }
 
-	@Override
-	public void setThreshold(int k) {
-		// TODO Auto-generated method stub		
-	}
+    @Override
+    public void setThreshold(int k) {
+        // TODO Auto-generated method stub
+    }
 
 }
 
 class BarrierMonitor extends Barrier {
 
-	boolean on = false;
-	boolean[] waiting = new boolean[9], pass = new boolean[9];
-	int cars = 0, threshold = 9;
+    boolean on = false;
+    boolean[] waiting = new boolean[9], pass = new boolean[9];
+    int cars = 0, threshold = 9;
 
-	@Override
-	synchronized public void sync(int no) throws InterruptedException {
-		if(on) {
-			cars++;
-			if(cars >= threshold) {
-				for(int i = 0; i < 9; i++)
-					if(waiting[i]) {
-						pass[i] = true;
-						waiting[i] = false;
-					}
-				cars = 0;
-				notifyAll();
-			} else {
-				waiting[no] = true;
-				pass[no] = false;
-				while(on && !pass[no]) wait();
-			}
-		}
-	}
+    @Override
+    synchronized public void sync(int no) throws InterruptedException {
+        if (on) {
+            cars++;
+            if (cars >= threshold) {
+                for (int i = 0; i < 9; i++) {
+                    if (waiting[i]) {
+                        pass[i] = true;
+                        waiting[i] = false;
+                    }
+                }
+                cars = 0;
+                notifyAll();
+            } else {
+                waiting[no] = true;
+                pass[no] = false;
+                while (on && !pass[no]) {
+                    wait();
+                }
+            }
+        }
+    }
 
-	@Override
-	synchronized public void on() {
-		on = true;
-		cars = 0;
-		for(int i = 0; i < 9; i++) {
-			waiting[i] = false;
-			pass[i] = true;
-		}
-	}
+    @Override
+    synchronized public void on() {
+        on = true;
+        cars = 0;
+        for (int i = 0; i < 9; i++) {
+            waiting[i] = false;
+            pass[i] = true;
+        }
+    }
 
-	@Override
-	synchronized public void off() {
-		on = false;
-		notifyAll();
-	}
+    @Override
+    synchronized public void off() {
+        on = false;
+        notifyAll();
+    }
 
-	@Override
-	synchronized public void setThreshold(int k) {
-		threshold = k;
-		if(cars >= threshold) {
-			for(int i = 0; i < 9; i++) {
-				if(waiting[i]) {
-					pass[i] = true;
-					waiting[i] = false;
-				}
-			}
-			cars = 0;
-			notifyAll();
-		}
-	}
+    @Override
+    synchronized public void setThreshold(int k) {
+        threshold = k;
+        if (cars >= threshold) {
+            for (int i = 0; i < 9; i++) {
+                if (waiting[i]) {
+                    pass[i] = true;
+                    waiting[i] = false;
+                }
+            }
+            cars = 0;
+            notifyAll();
+        }
+    }
 }
