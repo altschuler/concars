@@ -1,20 +1,11 @@
 class BarrierGate {
-    public Semaphore lock;
-    public int cars;
+    public Semaphore lock = new Semaphore(0);
+    public int cars = 0;
 
-    public BarrierGate() {
-        this.lock = new Semaphore(0);
-        this.cars = 0;
-    }
-
-    public void releaseAll() {
+    public void open() {
         for (int i = 0; i < this.cars; i++)
             this.lock.V();
 
-        this.reset();
-    }
-
-    public void reset() {
         this.cars = 0;
     }
 }
@@ -67,7 +58,7 @@ class BarrierSemaphore extends Barrier {
                 return;
             } else {
                 // Let everybody through the gate
-                gate.releaseAll();
+                gate.open();
             }
         }
 
@@ -76,10 +67,7 @@ class BarrierSemaphore extends Barrier {
 
     @Override
     public void sync(int no) throws InterruptedException {
-        // Arrival gate
         syncGate(this.arrivalGate);
-
-        // Departure gate
         syncGate(this.departureGate);
     }
 
@@ -89,11 +77,6 @@ class BarrierSemaphore extends Barrier {
             this.mutex.P();
 
             this.active = true;
-
-            // we must reset number of cars in both .on and .off because if cars
-            // are leaving after .off was called they will alter the state
-            this.arrivalGate.reset();
-            this.departureGate.reset();
 
             this.mutex.V();
         } catch (InterruptedException e) {
@@ -107,8 +90,8 @@ class BarrierSemaphore extends Barrier {
             this.mutex.P();
 
             // Release all the cars already at the gates
-            this.arrivalGate.releaseAll();
-            this.departureGate.releaseAll();
+            this.arrivalGate.open();
+            this.departureGate.open();
 
             this.active = false;
 
@@ -123,7 +106,6 @@ class BarrierSemaphore extends Barrier {
     public void setThreshold(int k) {
         // TODO Auto-generated method stub
     }
-
 }
 
 class BarrierMonitor extends Barrier {
