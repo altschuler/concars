@@ -68,8 +68,7 @@ class BarrierSemaphore extends Barrier {
                 return;
             } else {
                 // Let everybody through the gate
-                // (everybody's waiting except the car that triggered this)
-                gate.release(this.threshold - 1);
+                gate.release(gate.cars - 1);
             }
         }
 
