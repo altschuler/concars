@@ -1,17 +1,30 @@
 \section*{Step 5 - Car service}
 
-Each car has a `repair' semaphore
+The cars wear out and break down once in a while when being used by the kids. To handle that, the staff needs a way to remove the cars from the track for repairing and put the cars back on the track when they are ready.
 
-Two solutions
-- Check in each `run' loop whether `needsRepair', then handle it next iteration
--- car might make one more move before being removed
---
+\section{Analysis}
 
-- Send an interrupt to the car thread, catch it in the `run' loop
--- More complex!
--- Requires another while (true)
--- Difficult to clean up after the car since we don't know when it was interrupted
--- Car will be removed instantly
+For a car to be removed it needs to be signaled to do so, and it is required to respond to that signal by freeing all resources that it is currently using. Such resources include the position that it is currently on, the next position that it might already have requested and any potential access to the alley. Further the visual representation must be changed to reflect the changed state of the car.
+
+The car does not need to remember where it left the track since it will be put back into its start gate regardless.
+
+\section{Design}
+
+The remove and restore functionality is triggered from the two methods \texttt{removeCar} and \texttt{restoreCar} in \texttt{CarControl}, so the solution had to be be based on calling those. We could see two apparent solutions to the problem.
+
+The first idea, arguably a little na\"ive, involves a semaphore named \texttt{repairLock} on each car and a boolean flag on the car indicating that it needs to leave the track as soon as possible. The flag (which could be named \texttt{needsRepair}), would be checked by the car on each iteration of the loop in its \texttt{run} method. When the car realizes that it is requested to leave the track for repair it would release its resources, remove itself from the display and, very importantly, request a token from the \texttt{repairLock} semaphore. The car would thus be waiting for a token from \texttt{repairLock} which would be given, not surprisingly, through the \texttt{restoreCar} method.
+
+While this solution ``works'' it introduces various issues; first of all, the car must potentially execute a full iteration of its \texttt{run} loop before it even realizes that it needs repair. Most crucially is the issue that it will \emph{not} realize that it needs repair if it is in a waiting state, such as for access to the alley or behind another car. That alone completely rules out this solution.
+
+The idea of a \texttt{repairLock} is good though, so we kept that and combined it with the interrupt mechanism for threads provided by Java. We can interrupt at thread at any moment in time and execution state, meaning that we can interrupt the car in whatever it is doing, effectively forcing it to react immediately. It will catch the interrupt via a \texttt{try/catch} block and can free its resources accordingly.
+
+While this works it somewhat complicates matters because of the fact that an interrupt can happen at \texttt{any} time. To handle that we divide the logic done in the \texttt{run} method into blocks, each of which are enclosed in nested \texttt{try/catch} blocks. That way we know what has been done when the interrupt occurred and can act accordingly.
+
+The request of a token from \texttt{repairLock} remains the final thing that the repair mechanism performs, and it is still put back on track by means of adding a token to \texttt{repairLock}, just as in the first solution.
+
+\section{Implementation}
+In addition to the \texttt{repairLock} we have added a boolean flag to each car that indicates whether it is currently removed for repair. That prevents cars from being removed and restored multiple times, which can mess up the program state. The \texttt{removeCar} function calls \texttt{interrupt()} on the car that should be removed.
+
 
 %%% Local Variables:
 %%% mode: latex
