@@ -7,8 +7,8 @@ class BarrierGate {
         this.cars = 0;
     }
 
-    public void release(int amount) {
-        for (int i = 0; i < amount; i++)
+    public void releaseAll() {
+        for (int i = 0; i < this.cars; i++)
             this.lock.V();
 
         this.reset();
@@ -59,16 +59,15 @@ class BarrierSemaphore extends Barrier {
         this.mutex.P();
 
         if (this.active) {
-            gate.cars++;
-
-            if (gate.cars < this.threshold) {
+            if (gate.cars + 1 < this.threshold) {
+                gate.cars++;
                 this.mutex.V();
 
                 gate.lock.P(); // Wait for others
                 return;
             } else {
                 // Let everybody through the gate
-                gate.release(gate.cars - 1);
+                gate.releaseAll();
             }
         }
 
@@ -108,8 +107,8 @@ class BarrierSemaphore extends Barrier {
             this.mutex.P();
 
             // Release all the cars already at the gates
-            this.arrivalGate.release(this.arrivalGate.cars);
-            this.departureGate.release(this.departureGate.cars);
+            this.arrivalGate.releaseAll();
+            this.departureGate.releaseAll();
 
             this.active = false;
 
