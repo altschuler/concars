@@ -1,3 +1,24 @@
+class BarrierGate {
+    public Semaphore lock;
+    public int cars;
+
+    public BarrierGate() {
+        this.lock = new Semaphore(0);
+        this.cars = 0;
+    }
+
+    public void release(int amount) {
+        for (int i = 0; i < amount; i++)
+            this.lock.V();
+
+        this.reset();
+    }
+
+    public void reset() {
+        this.cars = 0;
+    }
+}
+
 public abstract class Barrier {
     abstract public void sync(int no) throws InterruptedException;
 
@@ -19,60 +40,49 @@ public abstract class Barrier {
 class BarrierSemaphore extends Barrier {
     private Boolean active;
 
-    private int threshold, carsArriving, carsDeparturing;
-    private Semaphore mutex, arrivalLock, departureLock;
+    private int threshold;
+    private Semaphore mutex;
+    private BarrierGate arrivalGate, departureGate;
 
     public BarrierSemaphore() {
         this.active = false;
 
         this.mutex = new Semaphore(1);
 
-        this.arrivalLock = new Semaphore(0);
-        this.departureLock = new Semaphore(0);
-
-        this.carsArriving = 0;
-        this.carsDeparturing = 0;
+        this.arrivalGate = new BarrierGate();
+        this.departureGate = new BarrierGate();
 
         this.threshold = 9;
     }
 
-    private void syncGate(Boolean isArrivalGate) throws InterruptedException {
+    private void syncGate(BarrierGate gate) throws InterruptedException {
         this.mutex.P();
-        Semaphore gateLock = isArrivalGate ? this.arrivalLock : this.departureLock;
 
         if (this.active) {
-            if (isArrivalGate) this.carsArriving++;
-            else               this.carsDeparturing++;
+            gate.cars++;
 
-            int cars = isArrivalGate ? this.carsArriving : this.carsDeparturing;
-            if (cars < this.threshold) {
-                // Wait for others
+            if (gate.cars < this.threshold) {
                 this.mutex.V();
 
-                gateLock.P();
+                gate.lock.P(); // Wait for others
+                return;
             } else {
-                // Give access to everyone
-                for (int i = 0; i < this.threshold - 1; i++) {
-                    gateLock.V();
-                }
-
-                if (isArrivalGate) this.carsArriving = 0;
-                else               this.carsDeparturing = 0;
-
-                this.mutex.V();
+                // Let everybody through the gate
+                // (everybody's waiting except the car that triggered this)
+                gate.release(this.threshold - 1);
             }
-        } else {
-            this.mutex.V();
         }
+
+        this.mutex.V();
     }
 
     @Override
     public void sync(int no) throws InterruptedException {
         // Arrival gate
-        syncGate(true);
+        syncGate(this.arrivalGate);
 
         // Departure gate
-        syncGate(false);
+        syncGate(this.departureGate);
     }
 
     @Override
@@ -84,8 +94,8 @@ class BarrierSemaphore extends Barrier {
 
             // we must reset number of cars in both .on and .off because if cars
             // are leaving after .off was called they will alter the state
-            this.carsArriving = 0;
-            this.carsDeparturing = 0;
+            this.arrivalGate.reset();
+            this.departureGate.reset();
 
             this.mutex.V();
         } catch (InterruptedException e) {
@@ -96,21 +106,11 @@ class BarrierSemaphore extends Barrier {
     @Override
     public void off() {
         try {
-
             this.mutex.P();
 
-            for (int i = 0; i < this.carsArriving; i++) {
-                this.arrivalLock.V();
-            }
-
-            for (int i = 0; i < this.carsDeparturing; i++) {
-                this.departureLock.V();
-            }
-
-            // resetting number of cars here because no remaining car should
-            // give access to the others again after this
-            this.carsArriving = 0;
-            this.carsDeparturing = 0;
+            // Release all the cars already at the gates
+            this.arrivalGate.release(this.arrivalGate.cars);
+            this.departureGate.release(this.departureGate.cars);
 
             this.active = false;
 
