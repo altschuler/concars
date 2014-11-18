@@ -1,5 +1,80 @@
 \section*{Step 3 - Barrier}
 
+The barrier must ensure that no car makes more rounds than any other, including the toddler, while the barrier is active. It must fulfill this by synchronizing cars near the start gates, forcing faster cars to await everybody's presence at the barrier before starting a new round.
+
+\subsection*{Analysis}
+There are some things to be aware of when designing a solution for the barrier implementation. We can use a single semaphore for the synchronization of all cars, but we use it in the ``inverse'' manner. That is, we request a token for each car that arrives at the barrier, and when all cars are present we add one for each so as to release them all, in no particular order. The release mechanism must happen atomically to avoid having two threads (cars) putting tokens back at the same time.
+
+Another thing we must pay attention to is the toddler. He is driving at an incredibly high speed; so fast that he can easily make a full round of his own before another car has taken a single step. This is a significant fact because it can result in the toddler blocking other cars before they are released from the barrier.
+
+Consider the situation where all cars are synchronized at the barrier and are about to be released for a new round. Since the release of cars (like anything in concurrent programming) cannot be considered to happen \emph{simultaneously}, the toddler might be the first car to be released. Because he is so fast, he will come back to the barrier before any of the other cars have been released and remove a token from the barrier semaphore thus taking another car's token and making two rounds while some other car must wait until the next synchronization.
+
+\subsection*{Design}
+We can ensure correct synchronization by using one more barrier to create a buffer effect. To pass the barrier a car must effectively pass two gates which we call \texttt{arrival} and \texttt{departure}. They are functionally identical and are ``located'' immediately after each other, but the \texttt{departure} gate prevents the toddler (and any other potentially super fast cars) from going directly back to the first gate and removing another cars' tokens. Instead they are forced to stop at the \texttt{departure} gate and wait for the other cars to be released. When all cars are present at the \texttt{departure} gate it implies that they were released. Now we can release everybody from the barrier and start the next round. The toddler can go back to the \texttt{arrival} gate as fast as he wants without interfering with the number of tokens.
+
+\subsection*{Implementation}
+The barrier is implemented as a class \texttt{BarrierSemaphore} (as opposed to \texttt{BarrierMonitor}) that exposes three methods: \texttt{sync}, \texttt{on} and \texttt{off}. The \texttt{sync} method is where the magic happens with regards to the above described synchronization mechanism.
+
+\begin{lstlisting}
+active = true
+threshold = 9
+
+mutex = Semaphore(1)
+arrivalLock = Semaphore(0)
+departureLock = Semaphore(0)
+
+carsArriving = 0
+carsDeparturing = 0
+
+sync() {
+  this.mutex.P()
+
+  if (active) {
+    // Arriving
+    carsArriving += 1
+
+    if (carsArriving < threshold) {
+      mutex.V()
+      arrivalLock.P() // Wait at arrival gate
+    } else {
+      // Release all the cars
+      for [ i = 0 to threshold ] {
+        arrivalLock.V()
+      }
+
+      carsArriving = 0
+      mutex.V()
+    }
+
+    // Leaving
+    mutex.P()
+    carsDeparturing += 1
+
+    if (carsDeparturing < threshold) {
+      mutex.V()
+      departureLock.P() // Wait at departure gate
+    } else {
+      // Release all the cars
+      for [ i = 0 to threshold ] {
+        departureLock.V()
+      }
+      carsDeparturing = 0
+      mutex.V()
+    }
+  }
+  else {
+    mutex.V()
+  }
+}
+\end{lstlisting}
+
+
+The barrier can be toggled on and off by the methods \texttt{Barrier::on} and \texttt{Barrier::off}, which is what the GUI methods \texttt{barrierOn} and \texttt{barrierOff} do.
+
+
+---
+
+
 Simple ``active'' variable for toggling state
 
 Has two ``barriers'' one for arrival and one for departure
