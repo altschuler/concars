@@ -1,6 +1,14 @@
 \section*{Conclusion}
 
-Such conclusion
+Concurrent programming is inherently a difficult subject where seemingly simple tasks can turn out to be more complex than expected. One must always keep in mind that threads can interleave with each other in endless different ways and thus we must correctly accommodate this. Sometimes however, we sacrifice complete functionality, or rather \emph{optimal} functionality, for correctness.
+
+Testing concurrent programs is not like testing normal programs. We can not write simple unit tests as usual because the execution of them can (and most likely will) differ each time they are run. Thus we can manually check that things work like they should, in a similar manner as the visual representation of the track and the cars. We can also take it a step further and translate the algorithms into a verification tool such as spin. Such tools can help prove an algorithm to be correct under concurrent execution, but we still cannot be completely certain that the production code is equivalent or that there are no bugs in the verification code.
+
+Despite these complications concurrent programming is an incredibly powerful way to exploit the processing capabilities of modern hardware. If used in the right way it can mean orders of magnitude improvements in performance, and unlocks design possibilities not possible without concurrency. But one must be careful not to stumble as things can quickly shift into chaos.
+
+\subsection*{Results}
+We have successfully implemented all tasks in the assignment, including extra task \texttt{E}. For most of the tasks we have considered multiple ways to solve the problem, compared pros and cons and selected the solution we found most fit.
+
 
 %%% Local Variables:
 %%% mode: latex
