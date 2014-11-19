@@ -1,11 +1,11 @@
-\section*{Step 2 - Spin verification}
-For the second step, we must prove our alley solution is correct with a promela model. We wrote a program in JSPIN for this.
+\section{Step 2 - Spin verification}
+For the second step, we must prove our alley solution is correct with a promela model. We wrote a program in JSPIN for this. To prove correctness, we must show that all cars in the alley at any given time has the same direction.
 
-To prove correctness, we must show that all cars in the alley at any given time has the same direction. First we rewrote our Java program in JSPIN. We rewrote the \texttt{AlleySemaphore} class in JSPIN directly in the proctypes \texttt{carUp} and \texttt{carDown}.
+We rewrote the methods \texttt{enter} and \texttt{leave} from the \texttt{AlleySemaphore} class in our java program into the proctypes \texttt{carUp} and \texttt{carDown}. The point is that instantiations of these procedures represent the car threads in our java program, and mimic their movement by sequentially running the \texttt{enter} and \texttt{leave} methods, encased in an infinite loop. This will actually prove the solution more robust than necessary, since it does not assume how and in what order the cars approach the alley. For example, four cars in the same direction can attempt to enter the alley at the same time in the promela model, but in java program they would queue up behind each other.
 
-The different direction cars are separated in proctypes to reduce the depth and transitions, which was a problem in early testing.
+The different direction cars are separated in proctypes to reduce the depth and transitions, which was a problem since the amount of states exploded.
 
-The uses Dijkstra semaphores, equivalent to the ones given in our Java program
+We wrote Dijkstra semaphores, equivalent to the ones given in our Java program.
 
 \texttt{init} instantiates the 8 cars and a \texttt{tester} procedure (atomically). The latter contains only assertions for testing purposes. Since JSPIN tests all possible states, it tests the assertions at any point of execution. If no errors are found, the assertions are proven to be invariants of the program, since they are always true.
 
@@ -46,8 +46,10 @@ pan: elapsed time 5.71 seconds
 pan: rate 120082.14 states/second
 \end{lstlisting}
 
-Using our program with eight cars, four in each direction, we proved a few invariants. We asserted that there was always 4 or fewer cars in the alley at any time, which must be true since max four cars move in the same direction. Both critical regions are respected, such that at most one thread exists in the \texttt{carsRegion} code, and at most two beyond the bottom and top semaphores. The first ensures that only one car has access to the state of the alley at any given point, and the second ensures that only one car from each direction is requesting access at a time. And finally, between entering and leaving the alley, each car asserted that it had the same direction as alleyDir. This proves that all cars in the alley must have the same direction at any time.
+Using our program with eight cars, four in each direction, we proved a few invariants. In \texttt{tester}, we asserted that there was always 4 or fewer cars in the alley at any time, which must be true since max four cars move in the same direction. Both critical regions are respected, such that at most one thread exists in the \texttt{carsRegion} code, and at most two exist beyond the bottom and top semaphores. The former test ensures that only one car has access to the state of the alley at any given point, and the latter ensures that only one car from each direction is requesting access to the alley at any time. Finally, between entering and leaving the alley, each car asserted that it had the same direction as \texttt{alleyDir}. This proves that all cars in the alley must have the same direction at any time.
 
-Since no cars of opposite direction can reside in the alley, no collisions can occur. So we have proven the correctness of our Alley solution, but not yet liveness i.e. that no locks will occur.
+Since no cars of opposite direction can reside in the alley, no collisions can occur. So we have proven the correctness of our Alley solution.
+
+We did however not prove liveness i.e. that no locks will occur.
 
 The verification used 2481064 transitions with a depth of 20482 with all cars. It complained of two unreached states: the final end state of both car proctypes, which obviously are unreachable since neither ever leave their infinite loops.
