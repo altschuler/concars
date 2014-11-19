@@ -46,7 +46,7 @@ From then on, a car would request access to the state of the alley by the semaph
 
 If the alley contains cars of opposite direction, the car will instead return the token to \texttt{carsRegion} and attempt to retrieve a token from the semaphore \texttt{access}. When it retrieves this token, it will again write request access to \texttt{carsRegion}, write to the alley that it is entering the alley, leave \texttt{carsRegion} and finally be free to enter the alley.
 
-When a car leaves the alley, it requests access to \texttt{carsRegion} 
+When a car leaves the alley, it requests access to \texttt{carsRegion}, writes to alley that it is leaving, and if the alley is now empty, adds a token to \texttt{access}.
 
 \subsubsection*{Implementation}
 
