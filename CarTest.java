@@ -15,7 +15,7 @@ public class CarTest extends Thread {
     }
 
     /*
-    * Set speed of all cars
+    * Utility method to set speed of all cars
     */
     private void setCarSpeed(int speed) {
         for (int i = 1; i < 9; i++)
@@ -164,19 +164,6 @@ public class CarTest extends Thread {
                     sleep(500);
 
                     cars.stopAll();
-                    break;
-
-                case 6:
-                    cars.barrierOn();
-
-                    cars.startCar(1);
-                    cars.startCar(2);
-                    cars.startCar(3);
-
-                    sleep(1000);
-
-                    cars.barrierOff();
-                    cars.barrierOn();
                     break;
 
                 case 19:
