@@ -64,32 +64,35 @@ class Car extends Thread {
 	Pos curpos; // Current position
 	Pos newpos; // New position to go to
 
-	SemFields semFields;
-	//Grid grid;
+	//SemFields semFields;
+	Grid grid;
+	Semaphore wait = new Semaphore(0);
 
 	Alley alley;
 
     public Semaphore repairLock;
     public boolean removed = false;
 
-    public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley, Barrier barrier) {
-    //public Car(int no, CarDisplayI cd, Gate g, Grid grid, Alley alley, Barrier barrier) {
+    //public Car(int no, CarDisplayI cd, Gate g, SemFields semFields, Alley alley, Barrier barrier) {
+    public Car(int no, CarDisplayI cd, Gate g, Grid grid, Alley alley, Barrier barrier) {
 		this.no = no;
 		this.cd = cd;
 		this.mygate = g;
         this.startpos = cd.getStartPos(no);
 		this.barpos = cd.getBarrierPos(no); // For later use
 
-		this.semFields = semFields;
-		//this.grid = grid;
+		//this.semFields = semFields;
+		this.grid = grid;
 
 		this.alley = alley;
         this.barrier = barrier;
 
+        /*
         try {
 			this.semFields.P(startpos);
 		} catch (InterruptedException e) { } //It can't be interrupted this early.
-        //this.grid.setPos(startpos,true);
+		*/
+        this.grid.setPos(startpos,true);
 
         this.repairLock = new Semaphore(0);
 
@@ -145,16 +148,13 @@ class Car extends Thread {
 		cd.clear(curpos);
 		removed = true;
 		try {
-			/*
-			grid.enter();
 			grid.setPos(curpos, false);
-			grid.exit();
-			*/
-			semFields.V(curpos);
+			//semFields.V(curpos);
 			if (alley.inAlley(curpos))
 				alley.leave(no);
 			curpos = cd.getStartPos(no);
-			semFields.P(curpos);
+			grid.setPos(curpos, true);
+			//semFields.P(curpos);
 			this.repairLock.P();
 			cd.mark(curpos, col, no);
 		} catch (InterruptedException e) {}
@@ -188,32 +188,51 @@ class Car extends Thread {
 				else if (!newIn && curIn)
 					alley.leave(no);
 				//Translation
-				//grid.enter();
-				semFields.P(newpos);
+				grid.enter();
 				try {
-					/*
-					if(!grid.getPos(newpos)) {
-						grid.setPos(curpos, false);
-					*/
+					if(grid.getPos(newpos)) {
+						Semaphore other = grid.getSem(newpos);
+						grid.setSem(newpos, wait);
+						grid.exit();
+						wait.P();
+						grid.setSem(newpos, other);
+						grid.exit();
+					} else {
+						grid.setPos(newpos, true);
+						grid.exit();
+					}
+					//semFields.P(newpos);
+					try {
 						cd.clear(curpos);
 						cd.mark(curpos, newpos, col, no);
 						sleep(speed());
 						cd.clear(curpos, newpos);
 						cd.mark(newpos, col, no);
 
-						semFields.V(curpos);
-						
+						try {
+							grid.enter();
+							Semaphore other = grid.getSem(curpos);
+							if(other == null) {
+								grid.setPos(curpos, false);
+								curpos = newpos;
+								grid.exit();
+							} else {
+								curpos = newpos;
+								other.V();
+							}
+						} catch(InterruptedException e) { //interrupted while completing movement
+							curpos = newpos;
+							repair();
+						}
+					} catch (InterruptedException e) { //Translation sleep interrupt
 						curpos = newpos;
-						//grid.setPos(curpos, true);
-					//}
-					//grid.exit();;
-				} catch (InterruptedException e) { //Translation sleep interrupt
-					cd.clear(newpos);
-					//grid.exit();
-					semFields.V(newpos);
+						cd.clear(newpos);
+						repair();
+					}
+				} catch(InterruptedException e) { //Interrupted while waiting
 					repair();
 				}
-			} catch (InterruptedException e) {
+			} catch (InterruptedException e) { //Interrupted not during moving
 				repair();
 			}
 		}
@@ -227,8 +246,8 @@ public class CarControl implements CarControlI {
 	CarDisplayI cd; // Reference to GUI
 	Car[] car; // Cars
 	Gate[] gate; // Gates
-	SemFields semFields = new SemFields(); // Spaces
-	//Grid grid = new Grid();
+	//SemFields semFields = new SemFields(); // Spaces
+	Grid grid = new Grid();
 	Alley alley; // Alley
     Barrier barrier;
 
@@ -247,8 +266,8 @@ public class CarControl implements CarControlI {
 
 		for (int no = 0; no < 9; no++) {
 			gate[no] = new Gate();
-			car[no] = new Car(no, cd, gate[no], semFields, alley, barrier);
-			//car[no] = new Car(no, cd, gate[no], grid, alley, barrier);
+			//car[no] = new Car(no, cd, gate[no], semFields, alley, barrier);
+			car[no] = new Car(no, cd, gate[no], grid, alley, barrier);
 			car[no].start();
 		}
 	}
@@ -330,6 +349,7 @@ class Grid {
 
 	private Semaphore mutex = new Semaphore(1);
 	private boolean[][] spaces = new boolean[11][12];
+	private Semaphore[][] sems = new Semaphore[11][12];
 
 	public void enter() throws InterruptedException {
 		mutex.P();
@@ -345,6 +365,14 @@ class Grid {
 
 	public void setPos(Pos pos, boolean val) {
 		spaces[pos.row][pos.col] = val;
+	}
+
+	public Semaphore getSem(Pos pos) {
+		return sems[pos.row][pos.col];
+	}
+
+	public void setSem(Pos pos, Semaphore sem) {
+		sems[pos.row][pos.col] = sem;
 	}
 
 }
