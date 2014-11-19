@@ -29,7 +29,6 @@ So in conclusion, solving these problems would require some semaphore use to hal
 %Impact on step 5
 
 \subsection*{Alley}
-%Theory
 
 \subsubsection*{Analysis}
 The alley is only one space wide. This means only one direction can move through the alley at any time. Since we are not allowed to change the path of cars, we cannot force them to turn around in the event of a collision. This means we have to predict future collisions, and not allow cars with opposite directions to move in the alley. Equivalently, all cars in alley at any time must always have the same direction.
@@ -41,11 +40,20 @@ Like with collision, when a car wishes to enter the alley, it must either immedi
 It is preferred not to rely on collision code to solve these problems, though we could rely that only one car can attempt to enter the alley from the top at any time, and only two cars can attempt to enter the alley from below. Cars 5, 6, 7 and 8 all move in a straight line before entering the alley, but 1, 2 and 3, 4 enter from different paths. If 1 and 3 attempts to enter the alley at the same time, both should be allowed at the same time. Otherwise, either may wait for the other to exit the alley.
 
 \subsubsection*{Design}
-For our solution, we used four semaphores, all of them binary with initially one token. Two of these, \texttt{bottom} and \texttt{top} are separated, such that only 1-4 use the first and 5-8 use the latter. Both of these semaphores ensure that only one car from each direction is competing for access to alley, while the rest are waiting for either of these semaphores. Notice, that we would not need the \texttt{top} semaphore, since it is guaranteed that only one of cars 5-8 are attempting to enter the alley at any time. We chose however to keep it, since then the solution does not depend on the paths of the cars, and is also more easily translated to JSPIN in step 2.
+For our solution, we used four semaphores, all of them binary with initially one token. Two of these, \texttt{bottom} and \texttt{top} are separated, such that only 1-4 use the first and 5-8 use the latter. Both of these semaphores ensure that only one car from each direction is competing for access to alley, while the rest are waiting for either of these semaphores.
+
+From then on, a car would request access to the state of the alley by the semaphore \texttt{carsRegion}. If the alley does not contain any cars in the opposite direction, the car will write to the alley that it enters, return a token to \texttt{carsRegion}, and is now free to enter the alley.
+
+If the alley contains cars of opposite direction, the car will instead return the token to \texttt{carsRegion} and attempt to retrieve a token from the semaphore \texttt{access}. When it retrieves this token, it will again write request access to \texttt{carsRegion}, write to the alley that it is entering the alley, leave \texttt{carsRegion} and finally be free to enter the alley.
+
+When a car leaves the alley, it requests access to \texttt{carsRegion} 
 
 \subsubsection*{Implementation}
 
-\subsubsection{Discussion}
+\subsubsection*{Discussion}
+
+Notice, that we would not need the \texttt{top} semaphore, since it is guaranteed that only one of cars 5-8 are attempting to enter the alley at any time. We chose however to keep it, since then the solution does not depend on the paths of the cars, and is also more easily translated to JSPIN in step 2.
+
 Could have been reader/writer approach
 Not fair / possible starvation
 1 and 2 could enter earlier
