@@ -157,8 +157,7 @@ class Car extends Thread {
 			semFields.P(curpos);
 			this.repairLock.P();
 			cd.mark(curpos, col, no);
-		} catch (InterruptedException e) {e.printStackTrace();}
-		//TODO: Should this swallow the exception?
+		} catch (InterruptedException e) {}
 		//This thread will never be interrupted, since
 		//interruption only happens if removed == false.
 	}

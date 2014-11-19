@@ -2,13 +2,13 @@
 
 The cars wear out and break down once in a while when being used by the kids. To handle that, the staff needs a way to remove the cars from the track for repairing and put the cars back on the track when they are ready.
 
-\section{Analysis}
+\subsection*{Analysis}
 
 For a car to be removed it needs to be signaled to do so, and it is required to respond to that signal by freeing all resources that it is currently using. Such resources include the position that it is currently on, the next position that it might already have requested and any potential access to the alley. Further the visual representation must be changed to reflect the changed state of the car.
 
 The car does not need to remember where it left the track since it will be put back into its start gate regardless.
 
-\section{Design}
+\subsection*{Design}
 
 The remove and restore functionality is triggered from the two methods \texttt{removeCar} and \texttt{restoreCar} in \texttt{CarControl}, so the solution had to be be based on calling those. We could see two apparent solutions to the problem.
 
@@ -22,9 +22,56 @@ While this works it somewhat complicates matters because of the fact that an int
 
 The request of a token from \texttt{repairLock} remains the final thing that the repair mechanism performs, and it is still put back on track by means of adding a token to \texttt{repairLock}, just as in the first solution.
 
-\section{Implementation}
-In addition to the \texttt{repairLock} we have added a boolean flag to each car that indicates whether it is currently removed for repair. That prevents cars from being removed and restored multiple times, which can mess up the program state. The \texttt{removeCar} function calls \texttt{interrupt()} on the car that should be removed.
+\subsection*{Implementation}
+In addition to the \texttt{repairLock} we have added a boolean flag to each car that indicates whether it is currently removed for repair. That prevents cars from being removed and restored multiple times, which can mess up the program state. The \texttt{removeCar} function calls \texttt{interrupt()} on the car to be removed, which will result in an \texttt{InterruptedException} being thrown in the car thread. The exception will be caught in one of the \texttt{try/catch} blocks within the \texttt{run} loop.
 
+Below is a simplified version of the \texttt{run} method of the car where all comments denote actual logic code that has been left out for clarity. Also, all code for handling visual representation is left out as it is irrelevant to the concept of the solution.
+
+\begin{lstlisting}
+public void run() {
+	// Initialize car
+	while (true) {
+		try {
+			sleep(speed());
+			// Handle positions
+			// Handle barrier
+			// Handle alley
+			// Allocate field resource
+			try {
+				// Free field resource
+			} catch (InterruptedException e) {
+				// Release any allocated ``newpos'' field resource
+				repair();
+			}
+		} catch (InterruptedException e) {
+			repair();
+		}
+	}
+}
+\end{lstlisting}
+
+It is clear how the \texttt{try/catch} blocks separate chunks of logic that can be caught and ``undone'' accordingly. For instance, if we have taken a token from the field resource, we must put it back if we get interrupted before it happens naturally.
+
+The \texttt{repair} method releases the current field resources and the alley access if the car is inside the alley:
+
+\begin{lstlisting}
+public void repair() {
+	removed = true;
+	try {
+		// Release current field and alley
+
+		curpos = cd.getStartPos(no);
+		semFields.P(curpos);
+
+		this.repairLock.P();
+
+	} catch (InterruptedException e) {e.printStackTrace();}
+}
+\end{lstlisting}
+
+As mentioned, the \texttt{repair} method requests a token from its \texttt{repairLock}, which causes it to wait to be put back on the track by the corresponding \texttt{V} operation which is performed by \texttt{restoreCar}.
+
+Note that the \texttt{catch} in \texttt{repair} will never be reached since interrupts only happen when a car is not in its repairing state.
 
 %%% Local Variables:
 %%% mode: latex
