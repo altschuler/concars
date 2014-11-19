@@ -22,7 +22,7 @@ While this works it somewhat complicates matters because of the fact that an int
 
 The request of a token from \texttt{repairLock} remains the final thing that the repair mechanism performs, and it is still put back on track by means of adding a token to \texttt{repairLock}, just as in the first solution.
 
-Our solution does not work with the barrier turned on.
+Our solution does not work correctly when the barrier is turned on.
 
 \subsection{Implementation}
 In addition to the \texttt{repairLock} we have added a boolean flag to each car that indicates whether it is currently removed for repair. That prevents cars from being removed and restored multiple times in a row, which can mess up the program state. The \texttt{removeCar} function calls \texttt{interrupt()} on the car to be removed, which will result in an \texttt{InterruptedException} being thrown in the car thread. The exception will be caught in one of the \texttt{try/catch} blocks within the \texttt{run} loop.
