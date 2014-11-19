@@ -1,14 +1,14 @@
 \section{Step 1 - Movement}
 %Introduction
-For the first step, we need to implement collision avoidance, such that two cars never inhabit the same space. This makes the alley a deadlock, since opposite cars would not be able to pass each other, so we also need to solve this. We first look at the collision problem before approaching the alley problem.
+For the first step, we need to implement collision avoidance, such that two cars never inhabit the same space. This makes the alley a potential deadlock, since opposite cars would not be able to pass each other, so we also need to solve this. We first look at the collision problem before approaching the alley problem.
 
 We must solve these problems using only semaphores. Monitors are not allowed in this step.
 
 \subsection{Collision}
 \subsubsection{Analysis}
-Moving 8 (and 1 separated) cars around in their own threads, there is bound to be some conflicts. We have to avoid cars moving into other cars' spaces, but also avoid two cars moving into the same space at the same time. This forces us to use some kind of mutual exclusion, where only one car at a time can inhabit any space.
+Moving 8 (and 1 isolated, the toddler) cars around in their own threads, there is bound to be some conflicts. We have to avoid cars moving into other cars' spaces, but also avoid two cars moving into the same space at the same time. This forces us to use some kind of mutual exclusion, where only one car at a time can inhabit any space.
 
-It is to our benefit, if we can assume that every iteration of the \texttt{run} loop always results in the car moving. This will ease alley and barrier detection in future steps, and also avoid semi-busy waits when cars attempt to move into spaces in use. Therefore, we want cars to suspend execution when they are met with an non-empty space, until the space becomes empty. This can be done using some initially empty semaphore, in which the blocking car adds a token when it moves away.
+It is to our benefit, if we can assume that every iteration of the \texttt{run} loop always results in the car moving, i.e. it does not ``give up'' and try again in the next iteration. This will ease alley and barrier detection in future steps, and also avoid semi-busy waits when cars attempt to move into spaces in use. Therefore, we want cars to suspend execution when they are met with a non-empty space, until the space becomes empty. This can be done using some initially empty semaphore, in which the blocking car adds a token when it moves away.
 
 If two cars attempt to move into the same space, only one must succeed. This can be solved by a semaphore initially with a single token, which allows a car to move into the space. Since only one of the cars will receive the semaphore token, only one will hold precedence and can move into the space. At some point, a token must be returned to this semaphore. If the first car has not moved yet from the contested position, the second car has a problem identical to the first case: attempting to move into inhabited space.
 
@@ -31,7 +31,7 @@ The \texttt{SemFields} are expensive in memory, but almost certainly the fastest
 
 Instead of a grid of semaphores, we tried a grid of booleans where each position represented if a car was using this space. We used a semaphore to make it mutually exclusive. The problem was that cars do not move instantaneously, but instead move halfway and sleep before completing the move. If the same car retained permission to the grid, all cars would be forced to wait, making it quite slow.
 
-Another problem was handling cars waiting for each other. Since no semaphores was involved, we had to implement some so each car could wait for each other. In the end, we did develop a fairly complex system where cars would leave a semaphore in a separate grid when they waited. When a car finally completed its move, it would add a token to any semaphore which was attached to its position. This proved difficult however, when multiple cars was contested for the same spot and removal, especially when both happened at the same time. We would need lists of semaphores in each position, and easy removal of elements in these to solve both of those. In the end, it would probably not be cheaper than our current solution, and was already much more complex.
+Another problem was handling cars waiting for each other. Since no semaphores were involved, we had to implement some so each car could wait for each other. In the end, we did develop a fairly complex system where cars would leave a semaphore in a separate grid when they waited. When a car finally completed its move, it would add a token to any semaphore which was attached to its position. This proved difficult however, when multiple cars was contested for the same spot and removal, especially when both happened at the same time. We would need lists of semaphores in each position, and easy removal of elements in these to solve both of those. In the end, it would probably not be cheaper than our current solution, and was already much more complex.
 
 Since we never found a better solution, we settled for the current one.
 
