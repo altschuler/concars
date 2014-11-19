@@ -1,10 +1,15 @@
 import java.util.HashSet;
 import java.util.Set;
 
+enum AlleyDir {
+    UP, DOWN, NONE;
+}
+
 public abstract class Alley {
 
-	protected static final int UP = 1, DOWN = -1;
-	protected int cars = 0, alleyDir = 0;
+	protected int cars = 0;
+    protected AlleyDir alleyDir = AlleyDir.NONE;
+
 	@SuppressWarnings("serial")
 	protected Set<Pos> points = new HashSet<Pos>() {{
 									add(new Pos(1,0));
@@ -20,8 +25,8 @@ public abstract class Alley {
 									add(new Pos(9,2));
 								}};
 
-	protected int noToDir(int no) {
-		return no > 4 ? DOWN : UP;
+	protected AlleyDir noToDir(int no) {
+		return no > 4 ? AlleyDir.DOWN : AlleyDir.UP;
 	}
 
 	public boolean inAlley(Pos p) {
@@ -38,25 +43,25 @@ public abstract class Alley {
 class AlleyMonitor extends Alley {
 
     synchronized public void enter(int no) throws InterruptedException {
-        int dir = noToDir(no);
-        while(dir == -alleyDir) { wait(); }
+        AlleyDir dir = noToDir(no);
+        while(alleyDir != dir && alleyDir != AlleyDir.NONE) { wait(); }
         cars++;
         alleyDir = dir;
     }
 
     synchronized public void leave(int no) {
         cars--;
-        if(cars == 0) { notifyAll(); alleyDir = 0; }
+        if(cars == 0) { notifyAll(); alleyDir = AlleyDir.NONE; }
     }
 
 }
 
 class AlleySemaphore extends Alley {
 
-    private Semaphore access = new Semaphore(1),
-            carsRegion = new Semaphore(1),
-            top = new Semaphore(1),
-            bottom = new Semaphore(1);
+    private Semaphore access = new Semaphore(1);
+    private Semaphore carsRegion = new Semaphore(1);
+    private Semaphore top = new Semaphore(1);
+    private Semaphore bottom = new Semaphore(1);
 
     private Semaphore noToSem(int no) {
         return no > 4 ? top : bottom;
@@ -67,12 +72,16 @@ class AlleySemaphore extends Alley {
 
         carsRegion.P();
 
-        if (Math.signum(cars) != noToDir(no)) {
+        AlleyDir dir = noToDir(no);
+        if (alleyDir != dir) {
             carsRegion.V();
             access.P();
             carsRegion.P();
         }
-        cars += noToDir(no);
+
+        alleyDir = dir;
+
+        cars++;
 
         carsRegion.V();
 
@@ -82,11 +91,13 @@ class AlleySemaphore extends Alley {
     public void leave(int no) throws InterruptedException {
         carsRegion.P();
 
-        cars -= noToDir(no);
-        if (cars == 0)
+        cars--;
+
+        if (cars == 0) {
+            alleyDir = AlleyDir.NONE;
             access.V();
+        }
 
         carsRegion.V();
     }
-
 }
