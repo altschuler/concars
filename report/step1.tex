@@ -2,9 +2,9 @@
 %Introduction
 For the first step, we need to implement collision avoidance, such that two cars never inhabit the same space. This makes the alley a deadlock, since opposite cars would not be able to pass each other, so we also need to solve this. We first look at the collision problem before approaching the alley problem.
 
-\subsection{Collision}
-We must avoid collisions between cars using only semaphores. Monitors are not allowed in this step.
+We must solve these problems using only semaphores. Monitors are not allowed in this step.
 
+\subsection{Collision}
 \subsubsection{Analysis}
 Moving 8 (and 1 separated) cars around in their own threads, there is bound to be some conflicts. We have to avoid cars moving into other cars' spaces, but also avoid two cars moving into the same space at the same time. This forces us to use some kind of mutual exclusion, where only one car at a time can inhabit any space.
 
