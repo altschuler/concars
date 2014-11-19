@@ -1,13 +1,14 @@
-#define DOWN 0
-#define UP 1
+#define NONE 0
+#define DOWN 1
+#define UP 2
 
 bool alleyAcc = 1;
 bool alleyCheck = 1;
 bool topQ = 1;
 bool botQ = 1;
 
-bool alleyDir = 0;
-bool alleyCars = 0;
+byte alleyDir = 0;
+byte alleyCars = 0;
 
 byte topbotQCrit = 0;
 byte alleyCheckCrit = 0
@@ -33,14 +34,18 @@ init
 	run tester();
 	run carUp();
 	run carUp();
+	run carUp();
+	run carUp();
 	run carDown();
 	run carDown();
+	run carDown();
+	run carDown()
 	}
 }
 
 proctype tester()
 {
-	assert(alleyCars <= 2);
+	assert(alleyCars <= 4);
 	assert(topbotQCrit <= 2);
 	assert(alleyCheckCrit <= 1)
 }
@@ -70,7 +75,7 @@ do ::
 	V(botQ);
 
 	//In Alley
-	assert(dir == alleyDir);
+	assert(alleyDir == UP);
 
 	//Exiting Alley
 	P(alleyCheck);
@@ -80,7 +85,7 @@ do ::
 
 	alleyCars--;
 	if
-	:: alleyCars == 0; V(alleyAcc)
+	:: alleyCars == 0; V(alleyAcc); alleyDir = NONE
 	:: alleyCars != 0; skip
 	fi;
 
@@ -113,7 +118,7 @@ do ::
 	V(topQ);
 
 	//In Alley
-	assert(dir == alleyDir);
+	assert(alleyDir == DOWN);
 
 	//Exiting Alley
 	P(alleyCheck);
@@ -123,74 +128,9 @@ do ::
 
 	alleyCars--;
 	if
-	:: alleyCars == 0; V(alleyAcc)
-	:: else; skip
+	:: alleyCars == 0; V(alleyAcc); alleyDir = NONE
+	:: alleyCars != 0; skip
 	fi;
 	V(alleyCheck)
 od
 }
-
-/* OLD - Variables have new names.
-init
-{
-	atomic{
-		run tester();
-		run car(DOWN);
-		run car(DOWN);
-		run car(UP);
-		run car(UP)
-	}
-}
-
-proctype car(bool dir)
-{
-do ::
-	//Entering Alley
-	if
-	:: dir == UP; atomic{bottom != 0; bottom--}
-	:: dir == DOWN; atomic{top != 0; top--}
-	fi;
-
-	topbotCrit++;
-	topbotCrit--;
-
-	P(carsRegion);
-	//Critical Region
-
-	carsRegionCrit++;
-	carsRegionCrit--;
-
-	if
-	:: alleyDir != dir; V(carsRegion); P(alleyAccess); P(carsRegion) //Temp leave critical region
-	:: alleyDir == dir; skip
-	fi;
-	alleyDir = dir;
-	numCars++;
-	//Exit Critical Region
-	V(carsRegion);
-
-	if
-	:: dir == UP; V(bottom)
-	:: dir == DOWN; V(top)
-	fi;
-	//During Alley
-
-	//Exiting Alley
-	P(carsRegion);
-	//Enter Critical Region
-
-	carsRegionCrit++;
-	carsRegionCrit--;
-
-	numCars--;
-	if
-	:: numCars == 0; V(alleyAccess)
-	:: numCars != 0; skip
-	fi;
-
-	//Exit Critical Region
-	V(carsRegion);
-	//end1:
-od
-}
-*/
