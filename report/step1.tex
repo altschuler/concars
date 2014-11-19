@@ -1,11 +1,51 @@
-\section*{Step 1 - The Alley}
+\section*{Step 1 - Movement}
+%Introduction
+For the first step, we need to implement collision avoidance, such that two cars never inhabit the same space. This makes the alley a deadlock, since opposite cars would not be able to pass each other, so we also need to solve this. We first look at the collision problem before approaching the alley problem.
 
-Alley and alley accessories
+\subsection*{Collision}
+We must avoid collisions between cars using only semaphores. Monitors are not allowed in this step.
+
+\subsubsection*{Analysis}
+Moving 8 (and 1 separated) cars around in their own threads, there is bound to be some conflicts. We have to avoid cars moving into other cars' spaces, but also avoid two cars moving into the space at the same time. This forces us to use some kind of mutual exclusion, where only one car at a time can inhabit any space.
+
+It is to our benefit, if we can assume that every iteration of the \texttt{run} loop always results in the car moving. This will ease alley and barrier detection in future steps, and also avoid semi-busy waits when cars attempt to move into spaces in use. Therefore, we want cars to halt execution when they are met with an non-empty space, until the space becomes empty. This can be done using some initially empty semaphore, in which the blocking car adds a token when it moves.
+
+If two cars attempt to move into the same space, only one must succeed. This can be solved by a semaphore initially with a single token, which allows a car to move into the space. Since only one of the cars will receive the semaphore, only one will hold precedence and can move into the space. At some point, a token must be returned to this semaphore. If the first car has not moved yet from the contested position, the second car has a problem identical to the first case: attempting to move into inhabited space.
+
+In addition to these problems, step 5 will need to remove cars from service, and the implementation will depend on how collision is handled. Also, since cars sleep during their movement, mutual exclusion is more difficult to implement since all cars move in two parts: moving half-way and completing the movement.
+
+So in conclusion, solving these problems would require some semaphore use to halt cars and/or mutual exclusion from moving.
+
+\subsubsection*{Design}
+%Semfields or grid?
+
+\subsubsection*{Implementation}
+%Semfields or grid?
+
+\subsubsection*{Discussion}
+%Semfields and grid.
+%Grid not releasing control during sleep.
+
+%Impact on step 5
+
+\subsection*{Alley}
+%Theory
+
+\subsubsection*{Analysis}
+The alley is only one space wide. This means only one direction can move through the alley at any time. Since we are not allowed to change the path of cars, we cannot force them to turn around in the event of a collision. This means we have to predict future collisions, and not allow cars with opposite directions to move in the alley. Equivalently, all cars in alley at any time must always have the same direction.
+
+This information is a critical region. Only one car should be able to read the state of the alley at any time, otherwise two cars could enter at the same time, which could lead to conflict. For example, if the alley is empty, two cars of opposite direction could attempt to enter at the same time. By using a semaphore to ensure mutual exclusion, only one car can enter at a time, and reading the alley's state is guaranteed not to be outdated until leaving the critical region.
+
+Like with collision, when a car wishes to enter the alley, it must either immediately enter or halt execution until it can. Thus cars wishing to enter the alley must attempt to remove tokens from some semaphore, which allows them to move into the alley. However, we want cars of same direction to enter the alley right after each other, so cars should only wait on this access semaphore if the direction of the alley is opposite.
+
+It is preferred not to rely on collision code to solve these problems, though we could rely that only one car can attempt to enter the alley from the top at any time, and only two cars can attempt to enter the alley from below. Cars 5, 6, 7 and 8 all move in a straight line before entering the alley, but 1, 2 and 3, 4 enter from different paths. If 1 and 3 attempts to enter the alley at the same time, both should be allowed at the same time. Otherwise, either may wait for the other to exit the alley.
+
+\subsubsection*{Design}
+For our solution, we used four semaphores, all of them binary with initially one token. Two of these, \texttt{bottom} and \texttt{top} are separated, such that only 1-4 use the first and 5-8 use the latter. Both of these semaphores ensure that only one car from each direction is competing for access to alley, while the rest are waiting for either of these semaphores. Notice, that we would not need the \texttt{top} semaphore, since it is guaranteed that only one of cars 5-8 are attempting to enter the alley at any time. We chose however to keep it, since then the solution does not depend on the paths of the cars, and is also more easily translated to JSPIN in step 2.
+
+\subsubsection*{Implementation}
+
+\subsubsection{Discussion}
 Could have been reader/writer approach
 Not fair / possible starvation
 1 and 2 could enter earlier
-
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "report"
-%%% End:
