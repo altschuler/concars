@@ -16,14 +16,16 @@ The first idea, arguably a little na\"ive, involves a semaphore named \texttt{re
 
 While this solution ``works'' it introduces various issues; first of all, the car must potentially execute a full iteration of its \texttt{run} loop before it even realizes that it needs repair. Most crucially is the issue that it will \emph{not} realize that it needs repair if it is in a waiting state, such as for access to the alley or behind another car. That alone completely rules out this solution.
 
-The idea of a \texttt{repairLock} is good though, so we kept that and combined it with the interrupt mechanism for threads provided by Java. We can interrupt at thread at any moment in time and execution state, meaning that we can interrupt the car in whatever it is doing, effectively forcing it to react immediately. It will catch the interrupt via a \texttt{try/catch} block and can free its resources accordingly.
+The idea of a \texttt{repairLock} is good though, so we kept that and combined it with the interrupt mechanism for threads provided by Java. We can interrupt a thread at any moment in time and execution state, meaning that we can interrupt the car in whatever it is doing, effectively forcing it to react immediately. It will catch the interrupt via a \texttt{try/catch} block and can free its resources accordingly.
 
 While this works it somewhat complicates matters because of the fact that an interrupt can happen at \texttt{any} time. To handle that we divide the logic done in the \texttt{run} method into blocks, each of which are enclosed in nested \texttt{try/catch} blocks. That way we know what has been done when the interrupt occurred and can act accordingly.
 
 The request of a token from \texttt{repairLock} remains the final thing that the repair mechanism performs, and it is still put back on track by means of adding a token to \texttt{repairLock}, just as in the first solution.
 
+Our solution does not work with the barrier turned on.
+
 \subsection{Implementation}
-In addition to the \texttt{repairLock} we have added a boolean flag to each car that indicates whether it is currently removed for repair. That prevents cars from being removed and restored multiple times, which can mess up the program state. The \texttt{removeCar} function calls \texttt{interrupt()} on the car to be removed, which will result in an \texttt{InterruptedException} being thrown in the car thread. The exception will be caught in one of the \texttt{try/catch} blocks within the \texttt{run} loop.
+In addition to the \texttt{repairLock} we have added a boolean flag to each car that indicates whether it is currently removed for repair. That prevents cars from being removed and restored multiple times in a row, which can mess up the program state. The \texttt{removeCar} function calls \texttt{interrupt()} on the car to be removed, which will result in an \texttt{InterruptedException} being thrown in the car thread. The exception will be caught in one of the \texttt{try/catch} blocks within the \texttt{run} loop.
 
 Below is a simplified version of the \texttt{run} method of the car where all comments denote actual logic code that has been left out for clarity. Also, all code for handling visual representation is left out as it is irrelevant to the concept of the solution.
 
