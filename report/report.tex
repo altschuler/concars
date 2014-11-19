@@ -1,7 +1,8 @@
 \documentclass{article}
 
 \usepackage{fullpage}
-\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
+\usepackage{textcomp}
 \usepackage{listings}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage{amssymb}
@@ -49,30 +50,47 @@
   numberstyle=\tiny,%
   stepnumber=1,%
   numbersep=5pt,%
-  numberblanklines=false, %
   breaklines,%
   breakatwhitespace,%
   prebreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},%
   breakindent=0pt
 }
 
+
+\title{Concurrent programming}
+
+\author{
+  Nielsen, Carsten\\
+  \texttt{s123062}
+  \and
+  Altschuler, Simon\\
+  \texttt{s123563}
+}
+
+\date{19/11/2014}
+
 \begin{document}
 
+\maketitle
+
+\begin{center}
+  Mandatory assignment for the course ``Concurrent Programming'' (02158)
+\end{center}
+\newpage
+
+\tableofcontents
+\newpage
+
 \input{intro.tex}
-\newpage
 \input{step1.tex}
-\newpage
 \input{step2.tex}
-\newpage
 \input{step3.tex}
-\newpage
 \input{step4.tex}
-\newpage
 \input{step5.tex}
-\newpage
 \input{testing.tex}
-\newpage
 \input{conclusion.tex}
+\newpage
+\input{appendix.tex}
 
 \end{document}
 
