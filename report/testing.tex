@@ -1,4 +1,4 @@
-\section*{Testing}
+\section{Testing}
 
 Testing concurrent programs is inherently difficult and the case of this assignment is no exception. The visual representation of threads as cars, deadlock areas as the alley, synchronization as the barrier, etc. are very helpful, but does not strictly verify the code. We have used \texttt{spin} for verifying the algorithmic properties of the alley, but that still does not prove that the Java program is implemented correctly.
 
@@ -6,32 +6,32 @@ The test facility provided by \texttt{CarTest} and the huge \texttt{switch} with
 
 Thus we are left with the automation that \texttt{CarTest} provides. Following are descriptions of what each of our tests do and what we expect to see happening on the screen when they run.
 
-\subsection*{Test 0 - Alley}
+\subsection{Test 0 - Alley}
 This test simply enabled the slowdown feature of the alley, and starts all the cars. After 1 second the cars are stopped, so that they will stop when they return to their gates.
 
 \textbf{Expected behavior}: One group of cars (usually the lower numbers) will enter the alley first. The second group should await all cars from the first group to pass through the alley before they enter.
 
-\subsection*{Test 1 - Toggling barrier instantly}
+\subsection{Test 1 - Toggling barrier instantly}
 The barrier can be toggled instantly on and off but it should always release all cars when \texttt{off} is called, even when \texttt{on} is called immediately afterwards. This test aligns all cars except car 0 at the barrier, then calls \texttt{off} and immediately after \texttt{on}.
 
 \textbf{Expected behavior}: The cars (except car 0) should line up at the barrier, then after 1 second they should make one round and return to their gates. Car 0 should remain in it's gate at all times.
 
-\subsection*{Test 2 - Barrier threshold}
+\subsection{Test 2 - Barrier threshold}
 When the threshold functionality is in use the barrier should open the gates when number of cars waiting at the barrier meets or exceed the threshold value. The barrier should only let an amount equal to the threshold value through and any excess cars must wait.
 
 \textbf{Expected behavior}: Car 0 should wait at the barrier until car 1 is started, then they should both take a round and line up at the barrier and wait until car 2 is started. It should continue like that until all cars have taken a round.
 
-\subsection*{Test 3 - Collision prevention}
+\subsection{Test 3 - Collision prevention}
 The cars must never collide, so they must wait before entering a field if there is already a car in it.
 
 \textbf{Expected behavior}: Car 5 should drive slowly to the top of the playground, then cars 6, 7 and 8 should start. They are going very fast so they should reach car 5 almost instantly, upon which they must stay behind it all the way around. They should go quickly to they gates immediately when car 5 turns up towards its own gate.
 
-\subsection*{Test 4 - Regular repairs}
+\subsection{Test 4 - Regular repairs}
 The cars should be able to be removed from the track for repairs and restored back onto the track later.
 
 \textbf{Expected behavior}: Car 1 should start and be removed, then restored at its gate a moment later. It should then be removed \emph{at} its gate and restored again, after which it must drive one round.
 
-\subsection*{Test 5 - Unrealistic repairs}
+\subsection{Test 5 - Unrealistic repairs}
 Not only do the cars need the ability to be removed and restored, but the playground staff include some extremely proficient mechanics, so they also need to be able to be restored immediately after being removed.
 
 \textbf{Expected behavior}: Cars 1 and 2 should start driving, then be removed after a moment, and be restored immediately after, then drive a round.

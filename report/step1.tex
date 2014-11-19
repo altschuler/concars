@@ -1,11 +1,11 @@
-\section*{Step 1 - Movement}
+\section{Step 1 - Movement}
 %Introduction
 For the first step, we need to implement collision avoidance, such that two cars never inhabit the same space. This makes the alley a deadlock, since opposite cars would not be able to pass each other, so we also need to solve this. We first look at the collision problem before approaching the alley problem.
 
-\subsection*{Collision}
+\subsection{Collision}
 We must avoid collisions between cars using only semaphores. Monitors are not allowed in this step.
 
-\subsubsection*{Analysis}
+\subsubsection{Analysis}
 Moving 8 (and 1 separated) cars around in their own threads, there is bound to be some conflicts. We have to avoid cars moving into other cars' spaces, but also avoid two cars moving into the same space at the same time. This forces us to use some kind of mutual exclusion, where only one car at a time can inhabit any space.
 
 It is to our benefit, if we can assume that every iteration of the \texttt{run} loop always results in the car moving. This will ease alley and barrier detection in future steps, and also avoid semi-busy waits when cars attempt to move into spaces in use. Therefore, we want cars to suspend execution when they are met with an non-empty space, until the space becomes empty. This can be done using some initially empty semaphore, in which the blocking car adds a token when it moves away.
@@ -16,21 +16,21 @@ In addition to these problems, step 5 will need to remove cars for service, and 
 
 So in conclusion, solving these problems would require some semaphore use to suspend cars and/or mutual exclusion from moving.
 
-\subsubsection*{Design}
+\subsubsection{Design}
 %Semfields or grid?
 
-\subsubsection*{Implementation}
+\subsubsection{Implementation}
 %Semfields or grid?
 
-\subsubsection*{Discussion}
+\subsubsection{Discussion}
 %Semfields and grid.
 %Grid not releasing control during sleep.
 
 %Impact on step 5
 
-\subsection*{Alley}
+\subsection{Alley}
 
-\subsubsection*{Analysis}
+\subsubsection{Analysis}
 The alley is only one space wide. This means only one lane of cars with the same direction can move through the alley at any time. Since we are not allowed to change the path of cars, we cannot force them to turn around in the event of a collision. This means we have to predict future collisions, and not allow cars with opposite directions to move in the alley. Equivalently, all cars in alley at any time must always have the same direction.
 
 This information is a critical region. Only one car should be able to read the state of the alley at any time, otherwise two cars could enter at the same time, which could lead to conflict. For example, if the alley is empty, two cars of opposite direction could attempt to enter at the same time. By using a semaphore to ensure mutual exclusion, only one car can enter at a time, and reading the alley's state is guaranteed not to be outdated until leaving the critical region.
@@ -39,7 +39,7 @@ Like with collision, when a car wishes to enter the alley, it must either immedi
 
 It is preferred not to rely on collision code to solve these problems, though we could expect that only one car can attempt to enter the alley from the top at any time, and only two cars can attempt to enter the alley from below. Cars 5, 6, 7 and 8 all move in a straight line before entering the alley, but 1, 2 and 3, 4 enter from different paths. If 1 and 3 attempts to enter the alley at the same time, both should be allowed at the same time. Otherwise, either may wait for the other to exit the alley.
 
-\subsubsection*{Design and implementation}
+\subsubsection{Design and implementation}
 For our solution, we used four semaphores, all of them binary with initially one token. Two of these, \texttt{bottom} and \texttt{top} are used exclusively by cars 1-4 (cars going clockwise) and 5-8 (cars going counter-clockwise), respectively. Both of these semaphores ensure that only one car from each direction is competing for access to the alley at a time, while the rest are waiting for either of these semaphores.
 
 A car requests access to read and write the state of the alley by the semaphore \texttt{carsRegion} which encapsulates the critical regions of the alley. There are two scenarios:
@@ -48,7 +48,7 @@ A car requests access to read and write the state of the alley by the semaphore 
 
 \textbf{Car leaves the alley}: The car requests access to \texttt{carsRegion}, and then decrements the number of cars in the alley. If there are no cars left, the alleys direction is set to ``none'' and a token is put into \texttt{access} to allow others to enter.
 
-\subsubsection*{Discussion}
+\subsubsection{Discussion}
 
 In fact we do not need the \texttt{top} semaphore, since it is guaranteed that only one of cars 5-8 are attempting to enter the alley at any time. We chose to keep it however, as the solution is more generally correct and will work for any shape of track (as long as the alley is defined correctly). Further it is easier to translate the algorithm into promella to be verified via spin.
 

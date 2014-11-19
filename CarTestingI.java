@@ -2,7 +2,7 @@
 //Mandatory assignment
 //Course 02158 Concurrent Programming, DTU, Fall 2014
 
-//Hans Henrik Løvengreen    Oct 6, 2014
+//Hans Henrik Loevengreen    Oct 6, 2014
 
 
 interface CarTestingI {
