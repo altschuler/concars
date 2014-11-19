@@ -17,19 +17,27 @@ In addition to these problems, step 5 will need to remove cars for service, and 
 So in conclusion, solving these problems would require some semaphore use to suspend cars and/or mutual exclusion from moving.
 
 \subsubsection{Design}
-%Semfields or grid?
+We solved this by creating a grid of semaphores the same size as the playground, so each position corresponds to a semaphore. All these semaphores contain a single token initially, which is removed when a car inhabits the space. When the car moves, it initially holds tokens from both its new position and its old one, only returning the old one when completing the move.
 
 \subsubsection{Implementation}
-%Semfields or grid?
+\texttt{SemFields} is the class containing the grid of semaphores. It contains \texttt{P(Pos p)} and \texttt{V(Pos p)} methods, either of them performing the respective operation on the semaphore in the given position. It is not robust, and does not detect positions out of bounds.
+
+In the \texttt{run} method of the \texttt{car} class, the original movement code has been modified to support this new paradigm. The car first requests the token from the semaphore in the \texttt{newpos} position. When it recieves this, the car holds tokens to both its current and future position, and continues normally with its animation and sleep. After this, the car changes curpos to newpos, and returns a token to its old position.
+
+When cars are instantiated or retrieved from maintenance, they remove the token from their position.
 
 \subsubsection{Discussion}
-%Semfields and grid.
-%Grid not releasing control during sleep.
+The \texttt{SemFields} are expensive in memory, but almost certainly the fastest solution, since all cars can move completely independently until imminent collision. We did however explore other solutions cheaper in memory.
 
-%Impact on step 5
+Instead of a grid of semaphores, we tried a grid of booleans where each position represented if a car was using this space. We used a semaphore to make it mutually exclusive. The problem was that cars do not move instantaneously, but instead move halfway and sleep before completing the move. If the same car retained permission to the grid, all cars would be forced to wait, making it quite slow.
+
+Another problem was handling cars waiting for each other. Since no semaphores was involved, we had to implement some so each car could wait for each other. In the end, we did develop a fairly complex system where cars would leave a semaphore in a separate grid when they waited. When a car finally completed its move, it would add a token to any semaphore which was attached to its position. This proved difficult however, when multiple cars was contested for the same spot and removal, especially when both happened at the same time. We would need lists of semaphores in each position, and easy removal of elements in these to solve both of those. In the end, it would probably not be cheaper than our current solution, and was already much more complex.
+
+Since we never found a better solution, we settled for the current one.
+
+Technically, we would only need semaphores on all spaces which at least two cars traverse, since these are the only spaces prone to collision.
 
 \subsection{Alley}
-
 \subsubsection{Analysis}
 The alley is only one space wide. This means only one lane of cars with the same direction can move through the alley at any time. Since we are not allowed to change the path of cars, we cannot force them to turn around in the event of a collision. This means we have to predict future collisions, and not allow cars with opposite directions to move in the alley. Equivalently, all cars in alley at any time must always have the same direction.
 
